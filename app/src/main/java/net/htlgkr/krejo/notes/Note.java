@@ -2,7 +2,7 @@ package net.htlgkr.krejo.notes;
 
 import java.time.LocalDate;
 
-public class Note {
+public class Note implements Comparable<Note>{
     public static final String REGEX = ":";
     private LocalDate localDate;
     private String noteContent;
@@ -34,5 +34,21 @@ public class Note {
 
     public void setNoteContent(String noteContent) {
         this.noteContent = noteContent;
+    }
+
+
+    @Override
+    public int compareTo(Note o) {
+        if (this.getLocalDate().isBefore(o.getLocalDate())){
+
+            return -1;
+
+        } else if (this.getLocalDate().isAfter(o.getLocalDate())){
+
+            return 1;
+
+        }
+
+        return 0;
     }
 }

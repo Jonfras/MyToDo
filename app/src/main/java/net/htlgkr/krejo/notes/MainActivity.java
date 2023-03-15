@@ -4,19 +4,20 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
-import android.app.Dialog;
-import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -31,11 +32,7 @@ import java.util.Scanner;
 public class MainActivity extends AppCompatActivity {
 
 
-    //Todo: Speichern mocha
-    //Todo: context menü bei longClick
-
     private static final String FILE_PATH = "notes.csv";
-    private static final String NOTE_SEPARATOR = ":";
 
     private static List<Note> noteList;
 
@@ -47,13 +44,15 @@ public class MainActivity extends AppCompatActivity {
     private EditText contentEditText;
     private TextView csvEmptyTextView;
     private ImageView calendarIcon;
-    private View vDialog;
+    private View createNoteView;
+    private View detailNoteView;
     private AlertDialog.Builder dialogBuilder = null;
-    AlertDialog alertDialog;
+
 
     private int mYear;
     private int mMonth;
     private int mDate;
+    private Note selectedNote;
 
 
     @Override
@@ -63,15 +62,12 @@ public class MainActivity extends AppCompatActivity {
 
         setUp();
 
-
     }
 
     private void setUp() {
 
-        vDialog = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
-        dialogBuilder = new AlertDialog.Builder(this)
-                .setView(vDialog);
-        alertDialog = dialogBuilder.create();
+        createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
+        detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
 
 
         FileInputStream fileInputStream = getInputStream();
@@ -81,24 +77,22 @@ public class MainActivity extends AppCompatActivity {
 
         listView = findViewById(R.id.notesListView);
         listView.setAdapter(notesAdapter);
+        registerForContextMenu(listView);
 
 
-        ok = vDialog.findViewById(R.id.okButton);
-        cancel = vDialog.findViewById(R.id.cancelButton);
+        ok = createNoteView.findViewById(R.id.okButton);
+        cancel = createNoteView.findViewById(R.id.cancelButton);
 
-        dateTimeEditText = vDialog.findViewById(R.id.dateTimeInputEditText);
-        contentEditText = vDialog.findViewById(R.id.contentEditText);
+        dateTimeEditText = createNoteView.findViewById(R.id.dateTimeInputEditText);
+        contentEditText = createNoteView.findViewById(R.id.contentEditText);
 
 
-
-        calendarIcon = vDialog.findViewById(R.id.calendarImageView);
+        calendarIcon = createNoteView.findViewById(R.id.calendarImageView);
 
         LocalDate ld = LocalDate.now();
         mYear = ld.getYear();
         mMonth = ld.getMonthValue();
         mDate = ld.getDayOfMonth();
-
-
     }
 
     private List<Note> readCsvIntoList(FileInputStream fileInputStream) {
@@ -147,11 +141,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.add ->
-                handleMenuBarAdd();
+            case R.id.add -> {
+                handleCreateNote(false);
 
-            case R.id.save ->
-                handleMenuBarSave();
+            }
+
+            case R.id.save -> handleMenuBarSave();
 
         }
         return (super.onOptionsItemSelected(item));
@@ -159,6 +154,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleMenuBarSave() {
         FileOutputStream fos = null;
+        Toast.makeText(MainActivity.this, "Saving...", Toast.LENGTH_SHORT).show();
+
         try {
             fos = openFileOutput(FILE_PATH, MODE_PRIVATE);
         } catch (FileNotFoundException e) {
@@ -170,18 +167,32 @@ public class MainActivity extends AppCompatActivity {
                 noteList) {
             pw.println(Note.serialize(n));
         }
-        pw.flush();
 
+        pw.flush();
         pw.close();
         try {
             fos.close();
         } catch (IOException e) {
             System.err.println("fos couldn't be closed");
         }
+
+        Toast.makeText(MainActivity.this, "Saved!", Toast.LENGTH_SHORT).show();
     }
 
 
-    private void handleMenuBarAdd() {
+    private void handleCreateNote(boolean edit) {
+        try {
+            ((ViewGroup) createNoteView.getParent()).removeView(createNoteView);
+        } catch (Exception e) {
+
+        }
+
+        dialogBuilder = new AlertDialog.Builder(this)
+                .setView(createNoteView);
+
+        AlertDialog createNoteDialog = dialogBuilder.create();
+
+
         calendarIcon.setOnClickListener(v -> {
 
             DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this,
@@ -202,12 +213,22 @@ public class MainActivity extends AppCompatActivity {
                         Integer.parseInt(dateArr[1]),
                         Integer.parseInt(dateArr[2]));
 
+
+                if (edit) {
+                    noteList.remove(selectedNote);
+                }
+
                 noteList.add(new Note(localDate, contentEditText.getText().toString()));
 
+                noteList.sort(Note::compareTo);
+
+
                 notesAdapter.notifyDataSetChanged();
+                listView.setAdapter(notesAdapter);
                 if (csvEmptyTextView.getParent() != null) {
                     ((ViewGroup) csvEmptyTextView.getParent()).removeView(csvEmptyTextView);
                 }
+                createNoteDialog.cancel();
             } catch (NumberFormatException e) {
                 csvEmptyTextView.setText("Not a valid Date!");
             }
@@ -217,9 +238,75 @@ public class MainActivity extends AppCompatActivity {
 
             contentEditText.setText("");
             dateTimeEditText.setText("");
-            alertDialog.cancel();
+            createNoteDialog.cancel();
         });
 
-        alertDialog.show();
+        createNoteDialog.show();
+
     }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        getMenuInflater().inflate(R.menu.my_context_menu, menu);
+
+        selectedNote = noteList.get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
     }
+
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.edit_item -> {
+                handleEdit();
+            }
+            case R.id.delete_item -> {
+                handleDelete();
+            }
+            case R.id.detail_item -> {
+                handleDetail();
+            }
+            default -> {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private void handleEdit() {
+
+        dateTimeEditText.setText(selectedNote.getLocalDate().toString());
+        contentEditText.setText(selectedNote.getNoteContent());
+
+        handleCreateNote(true);
+    }
+
+    private void handleDelete() {
+        noteList.remove(selectedNote);
+        notesAdapter.notifyDataSetChanged();
+    }
+
+    private void handleDetail() {
+        try {
+            ((ViewGroup) detailNoteView.getParent()).removeView(detailNoteView);
+        } catch (Exception e) {
+
+        }
+
+        dialogBuilder = new AlertDialog.Builder(this)
+                .setView(detailNoteView);
+
+        AlertDialog detail = dialogBuilder.create();
+
+        TextView tempDateTxtView = (TextView) detailNoteView.findViewById(R.id.detailDateTxtView);
+        tempDateTxtView.setText(selectedNote.getLocalDate().toString());
+        ((TextView) detailNoteView.findViewById(R.id.detailContentTxtView)).setText(selectedNote.getNoteContent());
+
+        if (selectedNote.getLocalDate().isBefore(LocalDate.now())){
+            tempDateTxtView.setBackgroundColor(Color.RED);
+        }
+
+        detail.show();
+
+    }
+}
