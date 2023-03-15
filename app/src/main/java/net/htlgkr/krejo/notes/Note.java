@@ -1,22 +1,31 @@
 package net.htlgkr.krejo.notes;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class Note {
-    private LocalDateTime localDateTime;
+    public static final String REGEX = ":";
+    private LocalDate localDate;
     private String noteContent;
 
-    public Note(LocalDateTime localDateTime, String noteContent) {
-        this.localDateTime = localDateTime;
+    public Note(LocalDate localDate, String noteContent) {
+        this.localDate = localDate;
         this.noteContent = noteContent;
     }
 
-    public LocalDateTime getLocalDateTime() {
-        return localDateTime;
+    public static String serialize(Note note){
+        return note.getLocalDate() + ":" + note.getNoteContent();
     }
 
-    public void setLocalDateTime(LocalDateTime localDateTime) {
-        this.localDateTime = localDateTime;
+    public static Note deserialize(String line) {
+       return new Note(LocalDate.parse(line.split(REGEX)[0]), line.split(REGEX)[1]);
+    }
+
+    public LocalDate getLocalDate() {
+        return localDate;
+    }
+
+    public void setLocalDate(LocalDate localDate) {
+        this.localDate = localDate;
     }
 
     public String getNoteContent() {

@@ -10,6 +10,10 @@ import android.widget.TextView;
 import java.util.List;
 
 public class NotesAdapter extends BaseAdapter {
+    public List<Note> getNoteList() {
+        return noteList;
+    }
+
     private List<Note> noteList;
     private int layoutId;
     private LayoutInflater inflater;
@@ -40,9 +44,9 @@ public class NotesAdapter extends BaseAdapter {
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
         Note note = noteList.get(i);
-        View listItem = (view == null) ? inflater.inflate(layoutId, null) : view;
+        View listItem = (view == null) ? inflater.inflate(this.layoutId, null) : view;
 
-        ((TextView) listItem.findViewById(R.id.dateTimeTextView)).setText(note.getLocalDateTime().toString());
+        ((TextView) listItem.findViewById(R.id.dateTimeTextView)).setText(note.getLocalDate().toString());
         ((TextView) listItem.findViewById(R.id.noteContentTextView)).setText(note.getNoteContent());
 
         return listItem;
