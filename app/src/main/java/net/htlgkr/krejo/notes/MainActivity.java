@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.ContextMenu;
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private static final String FILE_PATH = "notes.csv";
+    private static final int RQ_PREFERENCES = 1;
 
     private static List<Note> noteList;
 
@@ -54,6 +56,11 @@ public class MainActivity extends AppCompatActivity {
     private int mDate;
     private Note selectedNote;
 
+
+    //Todo: list view einträge xml file mit checkbox mocha damit mas obhakerln ko und de events don handlen
+    //Todo: dateiformat von csv auf irgendwos ändern
+    //Todo: kontext menü punkt detail löschen und als normales onClick event setzen
+    //Todo: vielleicht so an floating button mit neiche todo erstellen mocha
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,21 +108,22 @@ public class MainActivity extends AppCompatActivity {
         try {
             fileScanner = new Scanner(fileInputStream);
 
+
+            while (fileScanner.hasNext()) {
+                notes.add(Note.deserialize(fileScanner.nextLine()));
+            }
+
+            if (notes.isEmpty()) {
+                csvEmptyTextView = findViewById(R.id.csvEmptyTextView);
+                csvEmptyTextView.setText("No notes found in CSV!");
+            } else {
+                csvEmptyTextView = findViewById(R.id.csvEmptyTextView);
+                ((ViewGroup) csvEmptyTextView.getParent()).removeView(csvEmptyTextView);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        while (fileScanner.hasNext()) {
-            notes.add(Note.deserialize(fileScanner.nextLine()));
-        }
-
-        if (notes.isEmpty()) {
-            csvEmptyTextView = findViewById(R.id.csvEmptyTextView);
-            csvEmptyTextView.setText("No notes found in CSV!");
-        } else {
-            csvEmptyTextView = findViewById(R.id.csvEmptyTextView);
-            ((ViewGroup) csvEmptyTextView.getParent()).removeView(csvEmptyTextView);
-        }
 
         return notes;
     }
@@ -141,15 +149,19 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.add -> {
-                handleCreateNote(false);
-
-            }
+            case R.id.add -> handleCreateNote(false);
 
             case R.id.save -> handleMenuBarSave();
 
+            case R.id.preferences_detail -> handleOnPreferences();
+
         }
         return (super.onOptionsItemSelected(item));
+    }
+
+    private void handleOnPreferences() {
+        Intent intent = new Intent(this, MySettingsActivity.class);
+        startActivityForResult(intent, RQ_PREFERENCES);
     }
 
     private void handleMenuBarSave() {
@@ -218,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                     noteList.remove(selectedNote);
                 }
 
-                noteList.add(new Note(localDate, contentEditText.getText().toString()));
+                noteList.add(new Note(localDate, contentEditText.getText().toString(), edit));
 
                 noteList.sort(Note::compareTo);
 
@@ -302,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
         tempDateTxtView.setText(selectedNote.getLocalDate().toString());
         ((TextView) detailNoteView.findViewById(R.id.detailContentTxtView)).setText(selectedNote.getNoteContent());
 
-        if (selectedNote.getLocalDate().isBefore(LocalDate.now())){
+        if (selectedNote.getLocalDate().isBefore(LocalDate.now())) {
             tempDateTxtView.setBackgroundColor(Color.RED);
         }
 

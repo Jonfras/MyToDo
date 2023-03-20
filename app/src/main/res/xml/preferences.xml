@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="showDoneTasksCheckBox"
+        android:summary="Check if you want to see expired tasks on your ToDo-List"
+        android:title="Show Done Tasks" />
 </PreferenceScreen>
