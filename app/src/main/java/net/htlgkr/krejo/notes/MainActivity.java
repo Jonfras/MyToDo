@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLOutput;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private Button cancel;
     private EditText dateTimeEditText;
     private EditText contentEditText;
-    private TextView csvEmptyTextView;
+
     private ImageView calendarIcon;
     private View createNoteView;
     private View detailNoteView;
@@ -83,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         notesAdapter = new NotesAdapter(noteList, R.layout.list_item_layout, MainActivity.this);
 
         listView = findViewById(R.id.notesListView);
+        registerForContextMenu(listView);
         listView.setAdapter(notesAdapter);
         registerForContextMenu(listView);
 
@@ -104,22 +106,21 @@ public class MainActivity extends AppCompatActivity {
 
     private List<Note> readCsvIntoList(FileInputStream fileInputStream) {
         List<Note> notes = new ArrayList<>();
-        Scanner fileScanner = null;
         try {
-            fileScanner = new Scanner(fileInputStream);
-
+            Scanner fileScanner = new Scanner(fileInputStream);
 
             while (fileScanner.hasNext()) {
                 notes.add(Note.deserialize(fileScanner.nextLine()));
             }
 
-            if (notes.isEmpty()) {
-                csvEmptyTextView = findViewById(R.id.csvEmptyTextView);
-                csvEmptyTextView.setText("No notes found in CSV!");
-            } else {
-                csvEmptyTextView = findViewById(R.id.csvEmptyTextView);
-                ((ViewGroup) csvEmptyTextView.getParent()).removeView(csvEmptyTextView);
+            if (notes.isEmpty()){
+                System.out.println("no notes found");
+                new AlertDialog.Builder(this)
+                        .setMessage("No Notes found in CSV")
+                        .setPositiveButton("OK", null)
+                        .show();
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -149,11 +150,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.add -> handleCreateNote(false);
+            case R.id.add:
+                handleCreateNote(false);
+                break;
 
-            case R.id.save -> handleMenuBarSave();
+            case R.id.save:
+                handleMenuBarSave();
+                break;
 
-            case R.id.preferences_detail -> handleOnPreferences();
+            case R.id.preferences_detail:
+                handleOnPreferences();
+                break;
 
         }
         return (super.onOptionsItemSelected(item));
@@ -216,6 +223,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+
         ok.setOnClickListener(v -> {
 
             try {
@@ -237,12 +245,15 @@ public class MainActivity extends AppCompatActivity {
 
                 notesAdapter.notifyDataSetChanged();
                 listView.setAdapter(notesAdapter);
-                if (csvEmptyTextView.getParent() != null) {
-                    ((ViewGroup) csvEmptyTextView.getParent()).removeView(csvEmptyTextView);
-                }
+
+
                 createNoteDialog.cancel();
-            } catch (NumberFormatException e) {
-                csvEmptyTextView.setText("Not a valid Date!");
+            } catch (Exception e) {
+                System.out.println("Not a valid Date");
+                new AlertDialog.Builder(this)
+                        .setMessage("Not a valid Date!")
+                        .setPositiveButton("ok", null)
+                        .show();
             }
         });
 
@@ -269,18 +280,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.edit_item -> {
+            case R.id.edit_item:
                 handleEdit();
-            }
-            case R.id.delete_item -> {
+                break;
+
+            case R.id.delete_item:
                 handleDelete();
-            }
-            case R.id.detail_item -> {
+                break;
+
+            case R.id.detail_item:
                 handleDetail();
-            }
-            default -> {
+                break;
+
+            default:
                 return false;
-            }
+
         }
         return false;
     }
