@@ -1,10 +1,12 @@
 package net.htlgkr.krejo.notes;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceManager;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.ContextMenu;
@@ -12,24 +14,29 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.SQLOutput;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int RQ_PREFERENCES = 1;
 
     private static List<Note> noteList;
+    private static List<Note> uncheckedNotes;
 
     private NotesAdapter notesAdapter;
     private ListView listView;
@@ -50,6 +58,10 @@ public class MainActivity extends AppCompatActivity {
     private View createNoteView;
     private View detailNoteView;
     private AlertDialog.Builder dialogBuilder = null;
+
+    private SharedPreferences prefs;
+
+    private SharedPreferences.OnSharedPreferenceChangeListener preferencesChangeListener;
 
 
     private int mYear;
@@ -68,25 +80,50 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        FileInputStream fileInputStream = getInputStream();
+        noteList = readCsvIntoList(fileInputStream);
+        uncheckedNotes = noteList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        preferencesChangeListener = this::preferenceChanged;
+        prefs.registerOnSharedPreferenceChangeListener(preferencesChangeListener);
+
+
         setUp();
 
     }
+
+    private void preferenceChanged(SharedPreferences sharedPrefs, String key) {
+        Map<String, ?> allEntries = sharedPrefs.getAll();
+        String sValue = "";
+
+        if (allEntries.get(key) instanceof String) {
+            sValue = sharedPrefs.getString(key, "");
+
+        } else if (allEntries.get(key) instanceof Boolean) {
+            sValue = String.valueOf(sharedPrefs.getBoolean(key, false));
+        }
+
+        List<Note> list = (Boolean.parseBoolean(sValue)) ? noteList : uncheckedNotes;
+
+        notesAdapter = new NotesAdapter(list, R.layout.list_item_layout, MainActivity.this);
+
+        listView.setAdapter(notesAdapter);
+
+        notesAdapter.notifyDataSetChanged();
+    }
+
 
     private void setUp() {
 
         createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
         detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
 
-
-        FileInputStream fileInputStream = getInputStream();
-        noteList = readCsvIntoList(fileInputStream);
-
-        notesAdapter = new NotesAdapter(noteList, R.layout.list_item_layout, MainActivity.this);
+        preferenceChanged(prefs, "showDoneTasksCheckBox");
 
         listView = findViewById(R.id.notesListView);
         registerForContextMenu(listView);
         listView.setAdapter(notesAdapter);
-        registerForContextMenu(listView);
 
 
         ok = createNoteView.findViewById(R.id.okButton);
@@ -102,7 +139,28 @@ public class MainActivity extends AppCompatActivity {
         mYear = ld.getYear();
         mMonth = ld.getMonthValue();
         mDate = ld.getDayOfMonth();
+
+        listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                for (int i = 0; i < notesAdapter.getNoteList().size(); i++) {
+                    Note note = notesAdapter.getNoteList().get(i);
+                    View view = listView.getChildAt(i);
+                    CheckBox cb = view.findViewById(R.id.doneCheckBox);
+
+                    cb.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            note.toggleChecked();
+                            System.out.println("note wurde getoggled");
+                        }
+                    });
+                }
+            }
+        });
     }
+
+
 
     private List<Note> readCsvIntoList(FileInputStream fileInputStream) {
         List<Note> notes = new ArrayList<>();
@@ -110,10 +168,12 @@ public class MainActivity extends AppCompatActivity {
             Scanner fileScanner = new Scanner(fileInputStream);
 
             while (fileScanner.hasNext()) {
-                notes.add(Note.deserialize(fileScanner.nextLine()));
+                Note n = Note.deserialize(fileScanner.nextLine());
+
+                notes.add(n);
             }
 
-            if (notes.isEmpty()){
+            if (notes.isEmpty()) {
                 System.out.println("no notes found");
                 new AlertDialog.Builder(this)
                         .setMessage("No Notes found in CSV")
@@ -124,7 +184,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
 
         return notes;
     }
@@ -155,13 +214,19 @@ public class MainActivity extends AppCompatActivity {
                 break;
 
             case R.id.save:
-                handleMenuBarSave();
+                try {
+                    handleMenuBarSave();
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
 
             case R.id.preferences_detail:
                 handleOnPreferences();
                 break;
 
+            default:
+                throw new IllegalStateException("Unexpected value: " + item.getItemId());
         }
         return (super.onOptionsItemSelected(item));
     }
@@ -171,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, RQ_PREFERENCES);
     }
 
-    private void handleMenuBarSave() {
+    private void handleMenuBarSave() throws JsonProcessingException {
         FileOutputStream fos = null;
         Toast.makeText(MainActivity.this, "Saving...", Toast.LENGTH_SHORT).show();
 
@@ -221,7 +286,6 @@ public class MainActivity extends AppCompatActivity {
 
             datePickerDialog.show();
         });
-
 
 
         ok.setOnClickListener(v -> {

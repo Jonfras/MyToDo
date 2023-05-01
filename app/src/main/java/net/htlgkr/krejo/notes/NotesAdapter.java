@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
 import java.time.LocalDate;
@@ -53,6 +54,10 @@ public class NotesAdapter extends BaseAdapter {
         if (note.getLocalDate().isBefore(LocalDate.now())){
             tempTxtView.setBackgroundColor(Color.RED);
         }
+
+        CheckBox checkBox = ((CheckBox) listItem.findViewById(R.id.doneCheckBox));
+        checkBox.setChecked(note.getChecked());
+
         ((TextView) listItem.findViewById(R.id.noteContentTextView)).setText(note.getNoteContent());
 
         return listItem;

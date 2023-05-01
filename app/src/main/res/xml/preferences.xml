@@ -4,6 +4,6 @@
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="showDoneTasksCheckBox"
-        android:summary="Check if you want to see expired tasks on your ToDo-List"
+        android:summary="Show done Taks on your ToDo-List"
         android:title="Show Done Tasks" />
 </PreferenceScreen>
