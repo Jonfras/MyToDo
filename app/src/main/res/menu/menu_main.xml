@@ -12,7 +12,7 @@
         app:showAsAction="always|withText" />
     <item
         android:id="@+id/preferences_detail"
-        android:icon="@android:drawable/ic_menu_preferences"
+        android:icon="@drawable/ic_google_settings"
         android:title="preference"
         app:showAsAction="always|withText" />
 

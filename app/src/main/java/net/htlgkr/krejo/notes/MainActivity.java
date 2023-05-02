@@ -39,13 +39,13 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
-
-
     private static final String FILE_PATH = "notes.csv";
     private static final int RQ_PREFERENCES = 1;
 
     private static List<Note> noteList;
     private static List<Note> uncheckedNotes;
+
+    boolean preferenceSetting;
 
     private NotesAdapter notesAdapter;
     private ListView listView;
@@ -70,9 +70,6 @@ public class MainActivity extends AppCompatActivity {
     private Note selectedNote;
 
 
-    //Todo: list view einträge xml file mit checkbox mocha damit mas obhakerln ko und de events don handlen
-    //Todo: dateiformat von csv auf irgendwos ändern
-    //Todo: kontext menü punkt detail löschen und als normales onClick event setzen
     //Todo: vielleicht so an floating button mit neiche todo erstellen mocha
 
     @Override
@@ -82,15 +79,18 @@ public class MainActivity extends AppCompatActivity {
 
         FileInputStream fileInputStream = getInputStream();
         noteList = readCsvIntoList(fileInputStream);
-        uncheckedNotes = noteList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
+        syncLists();
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         preferencesChangeListener = this::preferenceChanged;
         prefs.registerOnSharedPreferenceChangeListener(preferencesChangeListener);
 
-
         setUp();
+    }
 
+    private void syncLists() {
+        uncheckedNotes = noteList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
+        uncheckedNotes.sort(Note::compareTo);
     }
 
     private void preferenceChanged(SharedPreferences sharedPrefs, String key) {
@@ -99,39 +99,45 @@ public class MainActivity extends AppCompatActivity {
 
         if (allEntries.get(key) instanceof String) {
             sValue = sharedPrefs.getString(key, "");
-
         } else if (allEntries.get(key) instanceof Boolean) {
             sValue = String.valueOf(sharedPrefs.getBoolean(key, false));
         }
 
-        List<Note> list = (Boolean.parseBoolean(sValue)) ? noteList : uncheckedNotes;
+        syncLists();
 
-        notesAdapter = new NotesAdapter(list, R.layout.list_item_layout, MainActivity.this);
+        preferenceSetting = (Boolean.parseBoolean(sValue));
+
+        setShownListByPreference();
 
         listView.setAdapter(notesAdapter);
 
         notesAdapter.notifyDataSetChanged();
     }
 
+    private void setShownListByPreference() {
+        noteList.sort(Note::compareTo);
+        syncLists();
+        uncheckedNotes.sort(Note::compareTo);
+        notesAdapter.setNoteList((preferenceSetting) ? noteList : uncheckedNotes);
+    }
 
     private void setUp() {
+        notesAdapter = new NotesAdapter(noteList, R.layout.list_item_layout, MainActivity.this);
 
         createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
         detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
-
-        preferenceChanged(prefs, "showDoneTasksCheckBox");
 
         listView = findViewById(R.id.notesListView);
         registerForContextMenu(listView);
         listView.setAdapter(notesAdapter);
 
+        preferenceChanged(prefs, "showDoneTasksCheckBox");
 
         ok = createNoteView.findViewById(R.id.okButton);
         cancel = createNoteView.findViewById(R.id.cancelButton);
 
         dateTimeEditText = createNoteView.findViewById(R.id.dateTimeInputEditText);
         contentEditText = createNoteView.findViewById(R.id.contentEditText);
-
 
         calendarIcon = createNoteView.findViewById(R.id.calendarImageView);
 
@@ -153,14 +159,15 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(View v) {
                             note.toggleChecked();
                             System.out.println("note wurde getoggled");
+                            syncLists();
+                            setShownListByPreference();
+                            notesAdapter.notifyDataSetChanged();
                         }
                     });
                 }
             }
         });
     }
-
-
 
     private List<Note> readCsvIntoList(FileInputStream fileInputStream) {
         List<Note> notes = new ArrayList<>();
@@ -185,6 +192,8 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        notes.sort(Note::compareTo);
+
         return notes;
     }
 
@@ -195,7 +204,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (FileNotFoundException e) {
             System.err.println("File was not found");
             return null;
-
         }
         return fileInputStream;
     }
@@ -212,7 +220,6 @@ public class MainActivity extends AppCompatActivity {
             case R.id.add:
                 handleCreateNote(false);
                 break;
-
             case R.id.save:
                 try {
                     handleMenuBarSave();
@@ -220,11 +227,9 @@ public class MainActivity extends AppCompatActivity {
                     throw new RuntimeException(e);
                 }
                 break;
-
             case R.id.preferences_detail:
                 handleOnPreferences();
                 break;
-
             default:
                 throw new IllegalStateException("Unexpected value: " + item.getItemId());
         }
@@ -276,9 +281,7 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog createNoteDialog = dialogBuilder.create();
 
-
         calendarIcon.setOnClickListener(v -> {
-
             DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this,
                     android.R.style.Theme_DeviceDefault_Dialog,
                     (view, year, month, dayOfMonth) -> dateTimeEditText.setText(year + "-" + month + "-" + dayOfMonth),
@@ -287,9 +290,7 @@ public class MainActivity extends AppCompatActivity {
             datePickerDialog.show();
         });
 
-
         ok.setOnClickListener(v -> {
-
             try {
                 String[] dateArr = dateTimeEditText.getText().toString().split("-");
 
@@ -297,19 +298,19 @@ public class MainActivity extends AppCompatActivity {
                         Integer.parseInt(dateArr[1]),
                         Integer.parseInt(dateArr[2]));
 
-
                 if (edit) {
                     noteList.remove(selectedNote);
                 }
 
-                noteList.add(new Note(localDate, contentEditText.getText().toString(), edit));
+                noteList.add(new Note(localDate, contentEditText.getText().toString(), (edit) ? selectedNote.getChecked() : false));
 
                 noteList.sort(Note::compareTo);
 
+                syncLists();
+
+                setShownListByPreference();
 
                 notesAdapter.notifyDataSetChanged();
-                listView.setAdapter(notesAdapter);
-
 
                 createNoteDialog.cancel();
             } catch (Exception e) {
@@ -322,14 +323,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         cancel.setOnClickListener(v -> {
-
             contentEditText.setText("");
             dateTimeEditText.setText("");
             createNoteDialog.cancel();
         });
 
         createNoteDialog.show();
-
     }
 
     @Override
@@ -337,34 +336,30 @@ public class MainActivity extends AppCompatActivity {
         super.onCreateContextMenu(menu, v, menuInfo);
         getMenuInflater().inflate(R.menu.my_context_menu, menu);
 
-        selectedNote = noteList.get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
+        selectedNote = notesAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
     }
-
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.edit_item:
+            case R.id.edit_item: {
                 handleEdit();
                 break;
-
-            case R.id.delete_item:
+            }
+            case R.id.delete_item: {
                 handleDelete();
                 break;
-
+            }
             case R.id.detail_item:
                 handleDetail();
                 break;
-
             default:
                 return false;
-
         }
         return false;
     }
 
     private void handleEdit() {
-
         dateTimeEditText.setText(selectedNote.getLocalDate().toString());
         contentEditText.setText(selectedNote.getNoteContent());
 
@@ -377,10 +372,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleDetail() {
-        try {
+        if(detailNoteView.getParent() != null) {
             ((ViewGroup) detailNoteView.getParent()).removeView(detailNoteView);
-        } catch (Exception e) {
-
         }
 
         dialogBuilder = new AlertDialog.Builder(this)
@@ -397,6 +390,5 @@ public class MainActivity extends AppCompatActivity {
         }
 
         detail.show();
-
     }
 }

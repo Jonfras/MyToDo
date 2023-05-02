@@ -22,6 +22,10 @@ public class NotesAdapter extends BaseAdapter {
     private LayoutInflater inflater;
     Context context;
 
+    public void setNoteList(List<Note> noteList) {
+        this.noteList = noteList;
+    }
+
     public NotesAdapter(List<Note> noteList, int layoutId, Context context) {
         this.noteList = noteList;
         this.layoutId = layoutId;
@@ -49,13 +53,15 @@ public class NotesAdapter extends BaseAdapter {
         Note note = noteList.get(i);
         View listItem = (view == null) ? inflater.inflate(this.layoutId, null) : view;
 
-        TextView tempTxtView = ((TextView) listItem.findViewById(R.id.dateTimeTextView));
+        TextView tempTxtView =  listItem.findViewById(R.id.dateTimeTextView);
         tempTxtView.setText(note.getLocalDate().toString());
         if (note.getLocalDate().isBefore(LocalDate.now())){
             tempTxtView.setBackgroundColor(Color.RED);
+        } else {
+            tempTxtView.setBackgroundColor(Color.WHITE);
         }
 
-        CheckBox checkBox = ((CheckBox) listItem.findViewById(R.id.doneCheckBox));
+        CheckBox checkBox = listItem.findViewById(R.id.doneCheckBox);
         checkBox.setChecked(note.getChecked());
 
         ((TextView) listItem.findViewById(R.id.noteContentTextView)).setText(note.getNoteContent());

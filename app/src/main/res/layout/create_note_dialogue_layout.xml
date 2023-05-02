@@ -28,25 +28,26 @@
 
         <Button
             android:id="@+id/cancelButton"
-            android:layout_width="70dp"
+            android:layout_width="65dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
             android:padding="5dp"
             android:paddingLeft="25dp"
             android:paddingRight="25dp"
-            android:text="@android:string/cancel" />
+            android:text="X" />
 
         <Button
             android:id="@+id/okButton"
-            android:layout_width="wrap_content"
+            android:layout_width="65dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginRight="5dp"
             android:layout_weight="1"
             android:padding="5dp"
             android:paddingLeft="25dp"
             android:paddingRight="25dp"
-            android:text="@android:string/ok" />
+            android:text="&#10004;" />
 
     </LinearLayout>
 

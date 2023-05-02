@@ -16,8 +16,6 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import java.time.LocalDate;
 
 public class Note implements Comparable<Note> {
-
-
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @JsonDeserialize(using = LocalDateDeserializer.class)
     @JsonSerialize(using = LocalDateSerializer.class)
@@ -42,13 +40,14 @@ public class Note implements Comparable<Note> {
                 @JsonProperty("getChecked") boolean checked) {
         this.localDate = localDate;
         this.noteContent = noteContent;
-        this.checked = checked;
+        this.checked = false;
+        setChecked(checked);
     }
 
     public Note() {
     }
 
-    public boolean toggleChecked(){
+    public boolean toggleChecked() {
         this.checked = !checked;
         return checked;
     }
@@ -89,16 +88,24 @@ public class Note implements Comparable<Note> {
 
     @Override
     public int compareTo(Note o) {
-        if (this.getLocalDate().isBefore(o.getLocalDate())) {
+        if (this.checked == o.checked ) {
 
-            return -1;
+            if (this.getLocalDate().isBefore(o.getLocalDate())) {
+                return -1;
 
-        } else if (this.getLocalDate().isAfter(o.getLocalDate())) {
+            } else if (this.getLocalDate().isAfter(o.getLocalDate())) {
+                return 1;
 
+            } else {
+                return 0;
+
+            }
+
+        } else if (this.checked){
             return 1;
-
+        } else {
+            return -1;
         }
 
-        return 0;
     }
 }
