@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.notes;
+package net.htlgkr.krejo.toDoList.settings;
 
 import android.os.Bundle;
 

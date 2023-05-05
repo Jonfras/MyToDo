@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.notes;
+package net.htlgkr.krejo.toDoList.todo;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
@@ -26,6 +26,9 @@ import android.widget.Toast;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import net.htlgkr.krejo.notes.R;
+import net.htlgkr.krejo.toDoList.settings.MySettingsActivity;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -38,16 +41,17 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class MainActivity extends AppCompatActivity {
+
+public class ToDoListActivity extends AppCompatActivity {
     private static final String FILE_PATH = "notes.csv";
     private static final int RQ_PREFERENCES = 1;
 
-    private static List<Note> noteList;
-    private static List<Note> uncheckedNotes;
+    private static List<ToDo> toDoList;
+    private static List<ToDo> uncheckedToDos;
 
     boolean preferenceSetting;
 
-    private NotesAdapter notesAdapter;
+    private ToDoAdapter toDoAdapter;
     private ListView listView;
     private Button ok;
     private Button cancel;
@@ -67,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private int mYear;
     private int mMonth;
     private int mDate;
-    private Note selectedNote;
+    private ToDo selectedToDo;
 
 
     //Todo: vielleicht so an floating button mit neiche todo erstellen mocha
@@ -75,10 +79,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.to_do_list_activity);
 
         FileInputStream fileInputStream = getInputStream();
-        noteList = readCsvIntoList(fileInputStream);
+        toDoList = readCsvIntoList(fileInputStream);
         syncLists();
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -89,8 +93,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void syncLists() {
-        uncheckedNotes = noteList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
-        uncheckedNotes.sort(Note::compareTo);
+        uncheckedToDos = toDoList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
+        uncheckedToDos.sort(ToDo::compareTo);
     }
 
     private void preferenceChanged(SharedPreferences sharedPrefs, String key) {
@@ -109,27 +113,27 @@ public class MainActivity extends AppCompatActivity {
 
         setShownListByPreference();
 
-        listView.setAdapter(notesAdapter);
+        listView.setAdapter(toDoAdapter);
 
-        notesAdapter.notifyDataSetChanged();
+        toDoAdapter.notifyDataSetChanged();
     }
 
     private void setShownListByPreference() {
-        noteList.sort(Note::compareTo);
+        toDoList.sort(ToDo::compareTo);
         syncLists();
-        uncheckedNotes.sort(Note::compareTo);
-        notesAdapter.setNoteList((preferenceSetting) ? noteList : uncheckedNotes);
+        uncheckedToDos.sort(ToDo::compareTo);
+        toDoAdapter.setNoteList((preferenceSetting) ? toDoList : uncheckedToDos);
     }
 
     private void setUp() {
-        notesAdapter = new NotesAdapter(noteList, R.layout.list_item_layout, MainActivity.this);
+        toDoAdapter = new ToDoAdapter(toDoList, R.layout.list_item_layout, ToDoListActivity.this);
 
         createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
         detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
 
         listView = findViewById(R.id.notesListView);
         registerForContextMenu(listView);
-        listView.setAdapter(notesAdapter);
+        listView.setAdapter(toDoAdapter);
 
         preferenceChanged(prefs, "showDoneTasksCheckBox");
 
@@ -149,19 +153,19 @@ public class MainActivity extends AppCompatActivity {
         listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                for (int i = 0; i < notesAdapter.getNoteList().size(); i++) {
-                    Note note = notesAdapter.getNoteList().get(i);
+                for (int i = 0; i < toDoAdapter.getNoteList().size(); i++) {
+                    ToDo toDo = toDoAdapter.getNoteList().get(i);
                     View view = listView.getChildAt(i);
                     CheckBox cb = view.findViewById(R.id.doneCheckBox);
 
                     cb.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            note.toggleChecked();
+                            toDo.toggleChecked();
                             System.out.println("note wurde getoggled");
                             syncLists();
                             setShownListByPreference();
-                            notesAdapter.notifyDataSetChanged();
+                            toDoAdapter.notifyDataSetChanged();
                         }
                     });
                 }
@@ -169,18 +173,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private List<Note> readCsvIntoList(FileInputStream fileInputStream) {
-        List<Note> notes = new ArrayList<>();
+    private List<ToDo> readCsvIntoList(FileInputStream fileInputStream) {
+        List<ToDo> toDos = new ArrayList<>();
         try {
             Scanner fileScanner = new Scanner(fileInputStream);
 
             while (fileScanner.hasNext()) {
-                Note n = Note.deserialize(fileScanner.nextLine());
+                ToDo n = ToDo.deserialize(fileScanner.nextLine());
 
-                notes.add(n);
+                toDos.add(n);
             }
 
-            if (notes.isEmpty()) {
+            if (toDos.isEmpty()) {
                 System.out.println("no notes found");
                 new AlertDialog.Builder(this)
                         .setMessage("No Notes found in CSV")
@@ -192,9 +196,9 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        notes.sort(Note::compareTo);
+        toDos.sort(ToDo::compareTo);
 
-        return notes;
+        return toDos;
     }
 
     private FileInputStream getInputStream() {
@@ -210,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_to_do_list, menu);
         return true;
     }
 
@@ -243,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleMenuBarSave() throws JsonProcessingException {
         FileOutputStream fos = null;
-        Toast.makeText(MainActivity.this, "Saving...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(ToDoListActivity.this, "Saving...", Toast.LENGTH_SHORT).show();
 
         try {
             fos = openFileOutput(FILE_PATH, MODE_PRIVATE);
@@ -252,9 +256,9 @@ public class MainActivity extends AppCompatActivity {
         }
         PrintWriter pw = new PrintWriter(fos, true);
 
-        for (Note n :
-                noteList) {
-            pw.println(Note.serialize(n));
+        for (ToDo n :
+                toDoList) {
+            pw.println(ToDo.serialize(n));
         }
 
         pw.flush();
@@ -265,7 +269,7 @@ public class MainActivity extends AppCompatActivity {
             System.err.println("fos couldn't be closed");
         }
 
-        Toast.makeText(MainActivity.this, "Saved!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(ToDoListActivity.this, "Saved!", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -282,10 +286,16 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog createNoteDialog = dialogBuilder.create();
 
         calendarIcon.setOnClickListener(v -> {
-            DatePickerDialog datePickerDialog = new DatePickerDialog(MainActivity.this,
-                    android.R.style.Theme_DeviceDefault_Dialog,
-                    (view, year, month, dayOfMonth) -> dateTimeEditText.setText(year + "-" + month + "-" + dayOfMonth),
-                    mYear, mMonth, mDate);
+            DatePickerDialog datePickerDialog = new DatePickerDialog(ToDoListActivity.this,
+                    android.R.style.Theme_DeviceDefault_Dialog, (view, year, month, dayOfMonth)
+                    -> dateTimeEditText.setText(year + "-" + (month + 1) + "-" + dayOfMonth),
+                    mYear,
+                    mMonth,
+                    mDate);
+
+            datePickerDialog.updateDate(LocalDate.now().getYear(),
+                    LocalDate.now().getMonthValue()-1,
+                    LocalDate.now().getDayOfMonth());
 
             datePickerDialog.show();
         });
@@ -299,18 +309,18 @@ public class MainActivity extends AppCompatActivity {
                         Integer.parseInt(dateArr[2]));
 
                 if (edit) {
-                    noteList.remove(selectedNote);
+                    toDoList.remove(selectedToDo);
                 }
 
-                noteList.add(new Note(localDate, contentEditText.getText().toString(), (edit) ? selectedNote.getChecked() : false));
+                toDoList.add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.getChecked() : false));
 
-                noteList.sort(Note::compareTo);
+                toDoList.sort(ToDo::compareTo);
 
                 syncLists();
 
                 setShownListByPreference();
 
-                notesAdapter.notifyDataSetChanged();
+                toDoAdapter.notifyDataSetChanged();
 
                 createNoteDialog.cancel();
             } catch (Exception e) {
@@ -336,7 +346,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreateContextMenu(menu, v, menuInfo);
         getMenuInflater().inflate(R.menu.my_context_menu, menu);
 
-        selectedNote = notesAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
+        selectedToDo = toDoAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
     }
 
     @Override
@@ -360,19 +370,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleEdit() {
-        dateTimeEditText.setText(selectedNote.getLocalDate().toString());
-        contentEditText.setText(selectedNote.getNoteContent());
+        dateTimeEditText.setText(selectedToDo.getLocalDate().toString());
+        contentEditText.setText(selectedToDo.getNoteContent());
 
         handleCreateNote(true);
     }
 
     private void handleDelete() {
-        noteList.remove(selectedNote);
-        notesAdapter.notifyDataSetChanged();
+        toDoList.remove(selectedToDo);
+        toDoAdapter.notifyDataSetChanged();
     }
 
     private void handleDetail() {
-        if(detailNoteView.getParent() != null) {
+        if (detailNoteView.getParent() != null) {
             ((ViewGroup) detailNoteView.getParent()).removeView(detailNoteView);
         }
 
@@ -382,13 +392,14 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog detail = dialogBuilder.create();
 
         TextView tempDateTxtView = (TextView) detailNoteView.findViewById(R.id.detailDateTxtView);
-        tempDateTxtView.setText(selectedNote.getLocalDate().toString());
-        ((TextView) detailNoteView.findViewById(R.id.detailContentTxtView)).setText(selectedNote.getNoteContent());
+        tempDateTxtView.setText(selectedToDo.getLocalDate().toString());
+        ((TextView) detailNoteView.findViewById(R.id.detailContentTxtView)).setText(selectedToDo.getNoteContent());
 
-        if (selectedNote.getLocalDate().isBefore(LocalDate.now())) {
+        if (selectedToDo.getLocalDate().isBefore(LocalDate.now())) {
             tempDateTxtView.setBackgroundColor(Color.RED);
         }
 
         detail.show();
     }
+
 }

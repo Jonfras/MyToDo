@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.notes;
+package net.htlgkr.krejo.toDoList.todo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -15,7 +15,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 
 import java.time.LocalDate;
 
-public class Note implements Comparable<Note> {
+public class ToDo implements Comparable<ToDo> {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @JsonDeserialize(using = LocalDateDeserializer.class)
     @JsonSerialize(using = LocalDateSerializer.class)
@@ -35,7 +35,7 @@ public class Note implements Comparable<Note> {
     }
 
     @JsonCreator
-    public Note(@JsonProperty("localDate") LocalDate localDate,
+    public ToDo(@JsonProperty("localDate") LocalDate localDate,
                 @JsonProperty("noteContent") String noteContent,
                 @JsonProperty("getChecked") boolean checked) {
         this.localDate = localDate;
@@ -44,7 +44,7 @@ public class Note implements Comparable<Note> {
         setChecked(checked);
     }
 
-    public Note() {
+    public ToDo() {
     }
 
     public boolean toggleChecked() {
@@ -60,13 +60,13 @@ public class Note implements Comparable<Note> {
         this.checked = checked;
     }
 
-    public static String serialize(Note note) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(note);
+    public static String serialize(ToDo toDo) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(toDo);
     }
 
-    public static Note deserialize(String line) throws JsonProcessingException {
+    public static ToDo deserialize(String line) throws JsonProcessingException {
         JsonNode node = objectMapper.readTree(line);
-        return objectMapper.treeToValue(node, Note.class);
+        return objectMapper.treeToValue(node, ToDo.class);
     }
 
     public LocalDate getLocalDate() {
@@ -87,7 +87,7 @@ public class Note implements Comparable<Note> {
 
 
     @Override
-    public int compareTo(Note o) {
+    public int compareTo(ToDo o) {
         if (this.checked == o.checked ) {
 
             if (this.getLocalDate().isBefore(o.getLocalDate())) {
