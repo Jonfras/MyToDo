@@ -25,6 +25,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.htlgkr.krejo.notes.R;
 import net.htlgkr.krejo.toDoList.settings.MySettingsActivity;
@@ -39,15 +40,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 
 public class ToDoListActivity extends AppCompatActivity {
+
+    ToDoListManager toDoListManager = new ToDoListManager();
     private static final String FILE_PATH = "notes.csv";
     private static final int RQ_PREFERENCES = 1;
 
-    private static List<ToDo> toDoList;
-    private static List<ToDo> uncheckedToDos;
 
     boolean preferenceSetting;
 
@@ -73,6 +73,9 @@ public class ToDoListActivity extends AppCompatActivity {
     private int mDate;
     private ToDo selectedToDo;
 
+    //Todo moch Readen und Writen via jackson object mapper
+
+
 
     //Todo: vielleicht so an floating button mit neiche todo erstellen mocha
 
@@ -82,8 +85,8 @@ public class ToDoListActivity extends AppCompatActivity {
         setContentView(R.layout.to_do_list_activity);
 
         FileInputStream fileInputStream = getInputStream();
-        toDoList = readCsvIntoList(fileInputStream);
-        syncLists();
+        toDoListManager.setToDoList(readJSON(fileInputStream));
+        toDoListManager.syncLists();
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         preferencesChangeListener = this::preferenceChanged;
@@ -92,10 +95,6 @@ public class ToDoListActivity extends AppCompatActivity {
         setUp();
     }
 
-    private void syncLists() {
-        uncheckedToDos = toDoList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
-        uncheckedToDos.sort(ToDo::compareTo);
-    }
 
     private void preferenceChanged(SharedPreferences sharedPrefs, String key) {
         Map<String, ?> allEntries = sharedPrefs.getAll();
@@ -107,7 +106,7 @@ public class ToDoListActivity extends AppCompatActivity {
             sValue = String.valueOf(sharedPrefs.getBoolean(key, false));
         }
 
-        syncLists();
+        toDoListManager.syncLists();
 
         preferenceSetting = (Boolean.parseBoolean(sValue));
 
@@ -119,14 +118,15 @@ public class ToDoListActivity extends AppCompatActivity {
     }
 
     private void setShownListByPreference() {
-        toDoList.sort(ToDo::compareTo);
-        syncLists();
-        uncheckedToDos.sort(ToDo::compareTo);
-        toDoAdapter.setNoteList((preferenceSetting) ? toDoList : uncheckedToDos);
+        toDoListManager.sortLists(ToDo::compareTo);
+        toDoListManager.syncLists();
+        //schau obs ohne de sortierung a geht
+        toDoListManager.sortLists(ToDo::compareTo);
+        toDoAdapter.setNoteList((preferenceSetting) ? toDoListManager.getToDoList() : toDoListManager.getToDoListWithoutDoneTasks());
     }
 
     private void setUp() {
-        toDoAdapter = new ToDoAdapter(toDoList, R.layout.list_item_layout, ToDoListActivity.this);
+        toDoAdapter = new ToDoAdapter(toDoListManager.getToDoList(), R.layout.list_item_layout, ToDoListActivity.this);
 
         createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
         detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
@@ -163,7 +163,7 @@ public class ToDoListActivity extends AppCompatActivity {
                         public void onClick(View v) {
                             toDo.toggleChecked();
                             System.out.println("note wurde getoggled");
-                            syncLists();
+                            toDoListManager.syncLists();
                             setShownListByPreference();
                             toDoAdapter.notifyDataSetChanged();
                         }
@@ -173,16 +173,16 @@ public class ToDoListActivity extends AppCompatActivity {
         });
     }
 
-    private List<ToDo> readCsvIntoList(FileInputStream fileInputStream) {
-        List<ToDo> toDos = new ArrayList<>();
+    private ToDoListManager readJSON(FileInputStream fileInputStream) {
+        ToDoListManager toDoListManager1 = new ToDoListManager();
         try {
             Scanner fileScanner = new Scanner(fileInputStream);
+            StringBuilder builder = new StringBuilder();
 
             while (fileScanner.hasNext()) {
-                ToDo n = ToDo.deserialize(fileScanner.nextLine());
-
-                toDos.add(n);
+                builder.append(fileScanner.nextLine());
             }
+
 
             if (toDos.isEmpty()) {
                 System.out.println("no notes found");
@@ -256,10 +256,9 @@ public class ToDoListActivity extends AppCompatActivity {
         }
         PrintWriter pw = new PrintWriter(fos, true);
 
-        for (ToDo n :
-                toDoList) {
-            pw.println(ToDo.serialize(n));
-        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonString = objectMapper.writeValueAsString(toDoListManager);
+        pw.println(jsonString);
 
         pw.flush();
         pw.close();
@@ -294,7 +293,7 @@ public class ToDoListActivity extends AppCompatActivity {
                     mDate);
 
             datePickerDialog.updateDate(LocalDate.now().getYear(),
-                    LocalDate.now().getMonthValue()-1,
+                    LocalDate.now().getMonthValue() - 1,
                     LocalDate.now().getDayOfMonth());
 
             datePickerDialog.show();
@@ -309,14 +308,14 @@ public class ToDoListActivity extends AppCompatActivity {
                         Integer.parseInt(dateArr[2]));
 
                 if (edit) {
-                    toDoList.remove(selectedToDo);
+                    toDoListManager.getToDoList().remove(selectedToDo);
                 }
 
-                toDoList.add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.getChecked() : false));
+                toDoListManager.getToDoList().add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.getChecked() : false));
 
-                toDoList.sort(ToDo::compareTo);
+                toDoListManager.sortLists(ToDo::compareTo);
 
-                syncLists();
+                toDoListManager.sortLists(ToDo::compareTo);
 
                 setShownListByPreference();
 
@@ -377,7 +376,7 @@ public class ToDoListActivity extends AppCompatActivity {
     }
 
     private void handleDelete() {
-        toDoList.remove(selectedToDo);
+        toDoListManager.getToDoList().remove(selectedToDo);
         toDoAdapter.notifyDataSetChanged();
     }
 
