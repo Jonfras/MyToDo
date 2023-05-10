@@ -1,21 +1,27 @@
-package net.htlgkr.krejo.toDoList.todo;
+package net.htlgkr.krejo.toDoList.manager;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import net.htlgkr.krejo.toDoList.todo.ToDo;
+
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ToDoListManager {
+public class ToDoList {
     private String name;
     private List<ToDo> toDoList;
     @JsonIgnore
     private List<ToDo> toDoListWithoutDoneTasks;
 
-    public ToDoListManager() {
+    public ToDoList() {
+        name = "null";
+        toDoList = new ArrayList<>();
+        toDoListWithoutDoneTasks = new ArrayList<>();
     }
 
-    public ToDoListManager(String name, List<ToDo> toDoList) {
+    public ToDoList(String name, List<ToDo> toDoList) {
         this.name = name;
         this.toDoList = toDoList;
     }

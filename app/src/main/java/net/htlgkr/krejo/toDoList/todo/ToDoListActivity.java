@@ -27,7 +27,8 @@ import android.widget.Toast;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import net.htlgkr.krejo.notes.R;
+import net.htlgkr.krejo.toDoList.R;
+import net.htlgkr.krejo.toDoList.manager.ToDoList;
 import net.htlgkr.krejo.toDoList.settings.MySettingsActivity;
 
 import java.io.FileInputStream;
@@ -36,15 +37,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
 
 public class ToDoListActivity extends AppCompatActivity {
 
-    ToDoListManager toDoListManager = new ToDoListManager();
+    ToDoList toDoList = new ToDoList();
     private static final String FILE_PATH = "notes.csv";
     private static final int RQ_PREFERENCES = 1;
 
@@ -77,7 +76,6 @@ public class ToDoListActivity extends AppCompatActivity {
 
 
 
-    //Todo: vielleicht so an floating button mit neiche todo erstellen mocha
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,8 +83,8 @@ public class ToDoListActivity extends AppCompatActivity {
         setContentView(R.layout.to_do_list_activity);
 
         FileInputStream fileInputStream = getInputStream();
-        toDoListManager.setToDoList(readJSON(fileInputStream));
-        toDoListManager.syncLists();
+        toDoList.setToDoList(readJSON(fileInputStream).getToDoList());
+        toDoList.syncLists();
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         preferencesChangeListener = this::preferenceChanged;
@@ -106,7 +104,7 @@ public class ToDoListActivity extends AppCompatActivity {
             sValue = String.valueOf(sharedPrefs.getBoolean(key, false));
         }
 
-        toDoListManager.syncLists();
+        toDoList.syncLists();
 
         preferenceSetting = (Boolean.parseBoolean(sValue));
 
@@ -118,15 +116,15 @@ public class ToDoListActivity extends AppCompatActivity {
     }
 
     private void setShownListByPreference() {
-        toDoListManager.sortLists(ToDo::compareTo);
-        toDoListManager.syncLists();
+        toDoList.sortLists(ToDo::compareTo);
+        toDoList.syncLists();
         //schau obs ohne de sortierung a geht
-        toDoListManager.sortLists(ToDo::compareTo);
-        toDoAdapter.setNoteList((preferenceSetting) ? toDoListManager.getToDoList() : toDoListManager.getToDoListWithoutDoneTasks());
+        toDoList.sortLists(ToDo::compareTo);
+        toDoAdapter.setNoteList((preferenceSetting) ? toDoList.getToDoList() : toDoList.getToDoListWithoutDoneTasks());
     }
 
     private void setUp() {
-        toDoAdapter = new ToDoAdapter(toDoListManager.getToDoList(), R.layout.list_item_layout, ToDoListActivity.this);
+        toDoAdapter = new ToDoAdapter(toDoList.getToDoList(), R.layout.todo_list_item_layout, ToDoListActivity.this);
 
         createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
         detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
@@ -163,7 +161,7 @@ public class ToDoListActivity extends AppCompatActivity {
                         public void onClick(View v) {
                             toDo.toggleChecked();
                             System.out.println("note wurde getoggled");
-                            toDoListManager.syncLists();
+                            toDoList.syncLists();
                             setShownListByPreference();
                             toDoAdapter.notifyDataSetChanged();
                         }
@@ -173,8 +171,8 @@ public class ToDoListActivity extends AppCompatActivity {
         });
     }
 
-    private ToDoListManager readJSON(FileInputStream fileInputStream) {
-        ToDoListManager toDoListManager1 = new ToDoListManager();
+    private ToDoList readJSON(FileInputStream fileInputStream) {
+        ToDoList toDoList1 = new ToDoList();
         try {
             Scanner fileScanner = new Scanner(fileInputStream);
             StringBuilder builder = new StringBuilder();
@@ -184,21 +182,25 @@ public class ToDoListActivity extends AppCompatActivity {
             }
 
 
-            if (toDos.isEmpty()) {
+            if (builder.toString().isEmpty()) {
                 System.out.println("no notes found");
                 new AlertDialog.Builder(this)
                         .setMessage("No Notes found in CSV")
                         .setPositiveButton("OK", null)
                         .show();
+            } else {
+                toDoList1 = new ObjectMapper().convertValue(builder.toString(), ToDoList.class);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        toDos.sort(ToDo::compareTo);
+        if (toDoList1 != null) {
+            toDoList1.sortLists(ToDo::compareTo);
+        }
 
-        return toDos;
+        return toDoList1;
     }
 
     private FileInputStream getInputStream() {
@@ -257,7 +259,7 @@ public class ToDoListActivity extends AppCompatActivity {
         PrintWriter pw = new PrintWriter(fos, true);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String jsonString = objectMapper.writeValueAsString(toDoListManager);
+        String jsonString = objectMapper.writeValueAsString(toDoList);
         pw.println(jsonString);
 
         pw.flush();
@@ -308,14 +310,14 @@ public class ToDoListActivity extends AppCompatActivity {
                         Integer.parseInt(dateArr[2]));
 
                 if (edit) {
-                    toDoListManager.getToDoList().remove(selectedToDo);
+                    toDoList.getToDoList().remove(selectedToDo);
                 }
 
-                toDoListManager.getToDoList().add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.getChecked() : false));
+                toDoList.getToDoList().add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.getChecked() : false));
 
-                toDoListManager.sortLists(ToDo::compareTo);
+                toDoList.sortLists(ToDo::compareTo);
 
-                toDoListManager.sortLists(ToDo::compareTo);
+                toDoList.sortLists(ToDo::compareTo);
 
                 setShownListByPreference();
 
@@ -376,7 +378,7 @@ public class ToDoListActivity extends AppCompatActivity {
     }
 
     private void handleDelete() {
-        toDoListManager.getToDoList().remove(selectedToDo);
+        toDoList.getToDoList().remove(selectedToDo);
         toDoAdapter.notifyDataSetChanged();
     }
 

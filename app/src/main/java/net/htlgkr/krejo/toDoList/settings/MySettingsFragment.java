@@ -4,8 +4,7 @@ import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.preference.PreferenceFragmentCompat;
-
-import net.htlgkr.krejo.notes.R;
+;import net.htlgkr.krejo.toDoList.R;
 
 public class MySettingsFragment extends PreferenceFragmentCompat {
     @Override

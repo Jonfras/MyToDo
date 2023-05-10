@@ -10,7 +10,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 
-import net.htlgkr.krejo.notes.R;
+import net.htlgkr.krejo.toDoList.R;
 
 import java.time.LocalDate;
 import java.util.List;
