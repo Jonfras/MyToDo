@@ -49,6 +49,7 @@ public class ManagerActivity extends AppCompatActivity {
     private Button cancelButton;
     private ListView listView;
     private ManagerAdapter managerAdapter;
+    private static ToDoList selectedToDoList;
 
 
     // TODO: 15.05.2023 moch context menü zum löschen vo listen und bearbeiten vom namen
@@ -261,8 +262,34 @@ public class ManagerActivity extends AppCompatActivity {
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        getMenuInflater().inflate(R.menu.my_context_menu, menu);
+        getMenuInflater().inflate(R.menu.manager_context_menu, menu);
 
-//        selectedToDo = toDoAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
+        selectedToDoList = managerAdapter.getToDoLists().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.edit_item: {
+                handleEdit();
+                break;
+            }
+            case R.id.delete_item: {
+                handleDelete();
+                break;
+            }
+            default:
+                return false;
+        }
+        return false;
+    }
+
+    private void handleDelete() {
+        managerList.remove(selectedToDoList);
+        managerAdapter.notifyDataSetChanged();
+    }
+
+    private void handleEdit() {
+        managerList.get(man)
     }
 }

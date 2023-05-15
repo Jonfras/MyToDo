@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.htlgkr.krejo.toDoList.R;
-import net.htlgkr.krejo.toDoList.manager.ManagerActivity;
 import net.htlgkr.krejo.toDoList.manager.ToDoList;
 import net.htlgkr.krejo.toDoList.settings.MySettingsActivity;
 
@@ -345,7 +344,7 @@ public class ToDoListActivity extends AppCompatActivity {
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        getMenuInflater().inflate(R.menu.my_context_menu, menu);
+        getMenuInflater().inflate(R.menu.to_do_list_context_menu, menu);
 
         selectedToDo = toDoAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
     }
