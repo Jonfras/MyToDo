@@ -12,12 +12,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ToDoList implements Serializable, Comparable<ToDoList> {
-    public ToDoList(ToDoList toDoList) {
-        this.name = toDoList.getName();
-        this.toDoList = toDoList.getToDoList();
-        syncLists();
-    }
-
     @Override
     public String toString() {
         return "ToDoList{" +
@@ -28,19 +22,20 @@ public class ToDoList implements Serializable, Comparable<ToDoList> {
     }
 
     private String name;
+
     private List<ToDo> toDoList;
     @JsonIgnore
     private List<ToDo> toDoListWithoutDoneTasks;
+    public ToDoList(ToDoList toDoList) {
+        this.name = toDoList.getName();
+        this.toDoList = toDoList.getToDoList();
+        syncLists();
+    }
 
     public ToDoList() {
         name = "null";
         toDoList = new ArrayList<>();
         toDoListWithoutDoneTasks = new ArrayList<>();
-    }
-
-    public ToDoList(String name, List<ToDo> toDoList) {
-        this.name = name;
-        this.toDoList = toDoList;
     }
 
     public String getName() {
@@ -82,12 +77,7 @@ public class ToDoList implements Serializable, Comparable<ToDoList> {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(name, toDoList, toDoListWithoutDoneTasks);
-    }
-
-    @Override
     public int compareTo(ToDoList o) {
-        return this.hashCode()-o.hashCode();
+        return this.name.compareTo(o.getName());
     }
 }

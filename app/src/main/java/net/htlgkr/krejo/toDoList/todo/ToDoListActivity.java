@@ -43,12 +43,9 @@ import java.util.Scanner;
 
 
 public class ToDoListActivity extends AppCompatActivity {
-    private static final int RQ_SINGLE_LIST = 69;
     ToDoList toDoList = new ToDoList();
     private static final String FILE_PATH = "recentToDoList.json";
     private static final int RQ_PREFERENCES = 1;
-
-
     boolean preferenceSetting;
 
     private ToDoAdapter toDoAdapter;
@@ -62,11 +59,8 @@ public class ToDoListActivity extends AppCompatActivity {
     private View createNoteView;
     private View detailNoteView;
     private AlertDialog.Builder dialogBuilder = null;
-
     private SharedPreferences prefs;
-
     private SharedPreferences.OnSharedPreferenceChangeListener preferencesChangeListener;
-
 
     private int mYear;
     private int mMonth;
@@ -164,49 +158,6 @@ public class ToDoListActivity extends AppCompatActivity {
                 }
             }
         });
-    }
-
-    private ToDoList readJSON(FileInputStream fileInputStream) {
-        ToDoList toDoList1 = new ToDoList();
-        try {
-            Scanner fileScanner = new Scanner(fileInputStream);
-            StringBuilder builder = new StringBuilder();
-
-            while (fileScanner.hasNext()) {
-                builder.append(fileScanner.nextLine());
-            }
-
-
-            if (builder.toString().isEmpty()) {
-                System.out.println("no notes found");
-                new AlertDialog.Builder(this)
-                        .setMessage("No Notes found in CSV")
-                        .setPositiveButton("OK", null)
-                        .show();
-            } else {
-                toDoList1 = new ObjectMapper().convertValue(builder.toString(), ToDoList.class);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (toDoList1 != null) {
-            toDoList1.sortLists(ToDo::compareTo);
-        }
-
-        return toDoList1;
-    }
-
-    private FileInputStream getInputStream() {
-        FileInputStream fileInputStream;
-        try {
-            fileInputStream = openFileInput(FILE_PATH);
-        } catch (FileNotFoundException e) {
-            System.err.println("File was not found");
-            return null;
-        }
-        return fileInputStream;
     }
 
     @Override
@@ -323,6 +274,9 @@ public class ToDoListActivity extends AppCompatActivity {
                 toDoAdapter.notifyDataSetChanged();
 
                 createNoteDialog.cancel();
+
+                handleMenuBarSave();
+
             } catch (Exception e) {
                 System.out.println("Not a valid Date");
                 new AlertDialog.Builder(this)
