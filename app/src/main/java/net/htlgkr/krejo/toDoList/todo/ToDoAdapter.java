@@ -54,7 +54,9 @@ public class ToDoAdapter extends BaseAdapter {
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
         ToDo toDo = toDoList.get(i);
-        View listItem = (view == null) ? inflater.inflate(this.layoutId, null) : view;
+        View listItem = (view == null) ?
+                inflater.inflate(this.layoutId, null) :
+                view;
 
         TextView tempTxtView =  listItem.findViewById(R.id.dateTimeTextView);
         tempTxtView.setText(toDo.getLocalDate().toString());

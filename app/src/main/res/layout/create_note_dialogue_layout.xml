@@ -27,7 +27,7 @@
             app:srcCompat="@android:drawable/ic_menu_my_calendar" />
 
         <Button
-            android:id="@+id/cancelButton"
+            android:id="@+id/addToDoCancelButton"
             android:layout_width="65dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
@@ -38,7 +38,7 @@
             android:text="X" />
 
         <Button
-            android:id="@+id/okButton"
+            android:id="@+id/addToDoOkButton"
             android:layout_width="65dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"

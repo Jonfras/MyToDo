@@ -4,12 +4,29 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import net.htlgkr.krejo.toDoList.todo.ToDo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class ToDoList {
+public class ToDoList implements Serializable, Comparable<ToDoList> {
+    public ToDoList(ToDoList toDoList) {
+        this.name = toDoList.getName();
+        this.toDoList = toDoList.getToDoList();
+        syncLists();
+    }
+
+    @Override
+    public String toString() {
+        return "ToDoList{" +
+                "name='" + name + '\'' +
+                ", toDoList=" + toDoList +
+                ", toDoListWithoutDoneTasks=" + toDoListWithoutDoneTasks +
+                '}';
+    }
+
     private String name;
     private List<ToDo> toDoList;
     @JsonIgnore
@@ -54,5 +71,23 @@ public class ToDoList {
     public void sortLists(Comparator<ToDo> c){
         toDoList.sort(c);
         toDoListWithoutDoneTasks.sort(c);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ToDoList toDoList1 = (ToDoList) o;
+        return Objects.equals(name, toDoList1.name) && Objects.equals(toDoList, toDoList1.toDoList) && Objects.equals(toDoListWithoutDoneTasks, toDoList1.toDoListWithoutDoneTasks);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, toDoList, toDoListWithoutDoneTasks);
+    }
+
+    @Override
+    public int compareTo(ToDoList o) {
+        return this.hashCode()-o.hashCode();
     }
 }

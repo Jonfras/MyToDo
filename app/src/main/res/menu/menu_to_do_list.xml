@@ -4,9 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools" tools:context=".manager.ManagerActivity">
 
     <item
-        android:id="@+id/add" android:icon="@android:drawable/ic_menu_add" app:showAsAction="always"   android:title="Add"/>
+        android:id="@+id/addToDo" android:icon="@android:drawable/ic_menu_add" app:showAsAction="always"   android:title="Add"/>
     <item
-        android:id="@+id/save"
+        android:id="@+id/saveToDo"
         android:icon="@android:drawable/ic_menu_save"
         android:title="Save"
         app:showAsAction="always|withText" />

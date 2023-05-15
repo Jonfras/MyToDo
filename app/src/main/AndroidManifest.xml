@@ -29,7 +29,7 @@
                 android:value="" />
         </activity>
         <activity android:name="net.htlgkr.krejo.toDoList.settings.MySettingsActivity" />
-        <activity android:name="net.htlgkr.krejo.toDoList.todo.ToDoListActivity" />
+        <activity android:name="net.htlgkr.krejo.toDoList.todo.ToDoListActivity" android:parentActivityName=".manager.ManagerActivity"/>
         <activity android:name="net.htlgkr.krejo.toDoList.LoginActivity" />
 
     </application>

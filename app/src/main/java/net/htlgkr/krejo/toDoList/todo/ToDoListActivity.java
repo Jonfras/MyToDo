@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.htlgkr.krejo.toDoList.R;
+import net.htlgkr.krejo.toDoList.manager.ManagerActivity;
 import net.htlgkr.krejo.toDoList.manager.ToDoList;
 import net.htlgkr.krejo.toDoList.settings.MySettingsActivity;
 
@@ -41,10 +42,11 @@ import java.util.Map;
 import java.util.Scanner;
 
 
-public class ToDoListActivity extends AppCompatActivity {
 
+public class ToDoListActivity extends AppCompatActivity {
+    private static final int RQ_SINGLE_LIST = 69;
     ToDoList toDoList = new ToDoList();
-    private static final String FILE_PATH = "notes.csv";
+    private static final String FILE_PATH = "recentToDoList.json";
     private static final int RQ_PREFERENCES = 1;
 
 
@@ -72,19 +74,14 @@ public class ToDoListActivity extends AppCompatActivity {
     private int mDate;
     private ToDo selectedToDo;
 
-    //Todo moch Readen und Writen via jackson object mapper
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.to_do_list_activity);
+        Bundle bundle = getIntent().getExtras();
+        toDoList = (ToDoList) bundle.get("toDoList");
 
-        FileInputStream fileInputStream = getInputStream();
-        toDoList.setToDoList(readJSON(fileInputStream).getToDoList());
-        toDoList.syncLists();
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
         preferencesChangeListener = this::preferenceChanged;
@@ -118,7 +115,6 @@ public class ToDoListActivity extends AppCompatActivity {
     private void setShownListByPreference() {
         toDoList.sortLists(ToDo::compareTo);
         toDoList.syncLists();
-        //schau obs ohne de sortierung a geht
         toDoList.sortLists(ToDo::compareTo);
         toDoAdapter.setNoteList((preferenceSetting) ? toDoList.getToDoList() : toDoList.getToDoListWithoutDoneTasks());
     }
@@ -135,8 +131,8 @@ public class ToDoListActivity extends AppCompatActivity {
 
         preferenceChanged(prefs, "showDoneTasksCheckBox");
 
-        ok = createNoteView.findViewById(R.id.okButton);
-        cancel = createNoteView.findViewById(R.id.cancelButton);
+        ok = createNoteView.findViewById(R.id.addToDoOkButton);
+        cancel = createNoteView.findViewById(R.id.addToDoCancelButton);
 
         dateTimeEditText = createNoteView.findViewById(R.id.dateTimeInputEditText);
         contentEditText = createNoteView.findViewById(R.id.contentEditText);
@@ -217,27 +213,32 @@ public class ToDoListActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_to_do_list, menu);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.add:
-                handleCreateNote(false);
+            case R.id.addToDo: {
+                handleCreateToDo(false);
                 break;
-            case R.id.save:
+            }
+            case R.id.saveToDo: {
                 try {
                     handleMenuBarSave();
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException(e);
                 }
                 break;
-            case R.id.preferences_detail:
+            }
+            case R.id.preferences_detail: {
                 handleOnPreferences();
                 break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + item.getItemId());
+            }
+
+            default: {
+                }
         }
         return (super.onOptionsItemSelected(item));
     }
@@ -274,12 +275,11 @@ public class ToDoListActivity extends AppCompatActivity {
     }
 
 
-    private void handleCreateNote(boolean edit) {
-        try {
+    private void handleCreateToDo(boolean edit) {
+        if (createNoteView.getParent() != null) {
             ((ViewGroup) createNoteView.getParent()).removeView(createNoteView);
-        } catch (Exception e) {
-
         }
+
 
         dialogBuilder = new AlertDialog.Builder(this)
                 .setView(createNoteView);
@@ -374,7 +374,7 @@ public class ToDoListActivity extends AppCompatActivity {
         dateTimeEditText.setText(selectedToDo.getLocalDate().toString());
         contentEditText.setText(selectedToDo.getNoteContent());
 
-        handleCreateNote(true);
+        handleCreateToDo(true);
     }
 
     private void handleDelete() {
