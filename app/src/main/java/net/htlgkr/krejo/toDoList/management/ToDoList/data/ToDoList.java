@@ -1,17 +1,28 @@
-package net.htlgkr.krejo.toDoList.manager;
+package net.htlgkr.krejo.toDoList.management.ToDoList.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import net.htlgkr.krejo.toDoList.todo.ToDo;
+import net.htlgkr.krejo.toDoList.management.toDo.ToDo;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import lombok.*;
+
+@Data
 public class ToDoList implements Serializable, Comparable<ToDoList> {
+    private String name;
+    private String additionalData;
+    private List<ToDo> toDoList;
+    @JsonIgnore
+    private List<ToDo> toDoListWithoutDoneTasks;
+
+    public ToDoList() {
+    }
+
     @Override
     public String toString() {
         return "ToDoList{" +
@@ -19,43 +30,6 @@ public class ToDoList implements Serializable, Comparable<ToDoList> {
                 ", toDoList=" + toDoList +
                 ", toDoListWithoutDoneTasks=" + toDoListWithoutDoneTasks +
                 '}';
-    }
-
-    private String name;
-
-    private List<ToDo> toDoList;
-    @JsonIgnore
-    private List<ToDo> toDoListWithoutDoneTasks;
-    public ToDoList(ToDoList toDoList) {
-        this.name = toDoList.getName();
-        this.toDoList = toDoList.getToDoList();
-        syncLists();
-    }
-
-    public ToDoList() {
-        name = "null";
-        toDoList = new ArrayList<>();
-        toDoListWithoutDoneTasks = new ArrayList<>();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<ToDo> getToDoList() {
-        return toDoList;
-    }
-
-    public void setToDoList(List<ToDo> toDoList) {
-        this.toDoList = toDoList;
-    }
-
-    public List<ToDo> getToDoListWithoutDoneTasks() {
-        return toDoListWithoutDoneTasks;
     }
 
     public void syncLists() {

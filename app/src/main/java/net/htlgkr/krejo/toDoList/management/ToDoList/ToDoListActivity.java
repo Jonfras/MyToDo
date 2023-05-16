@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.toDoList.todo;
+package net.htlgkr.krejo.toDoList.management.ToDoList;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
@@ -28,27 +28,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.htlgkr.krejo.toDoList.R;
-import net.htlgkr.krejo.toDoList.manager.ToDoList;
-import net.htlgkr.krejo.toDoList.settings.MySettingsActivity;
+import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
+import net.htlgkr.krejo.toDoList.management.settings.SettingsActivity;
+import net.htlgkr.krejo.toDoList.management.toDo.ToDo;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.Scanner;
-
 
 
 public class ToDoListActivity extends AppCompatActivity {
-    ToDoList toDoList = new ToDoList();
+    ToDoList toDoList;
     private static final String FILE_PATH = "recentToDoList.json";
     private static final int RQ_PREFERENCES = 1;
     boolean preferenceSetting;
 
-    private ToDoAdapter toDoAdapter;
+    private ToDoListAdapter toDoListAdapter;
     private ListView listView;
     private Button ok;
     private Button cancel;
@@ -71,7 +69,7 @@ public class ToDoListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.to_do_list_activity);
+        setContentView(R.layout.activity_layout_to_do_list);
         Bundle bundle = getIntent().getExtras();
         toDoList = (ToDoList) bundle.get("toDoList");
 
@@ -100,27 +98,27 @@ public class ToDoListActivity extends AppCompatActivity {
 
         setShownListByPreference();
 
-        listView.setAdapter(toDoAdapter);
+        listView.setAdapter(toDoListAdapter);
 
-        toDoAdapter.notifyDataSetChanged();
+        toDoListAdapter.notifyDataSetChanged();
     }
 
     private void setShownListByPreference() {
         toDoList.sortLists(ToDo::compareTo);
         toDoList.syncLists();
         toDoList.sortLists(ToDo::compareTo);
-        toDoAdapter.setNoteList((preferenceSetting) ? toDoList.getToDoList() : toDoList.getToDoListWithoutDoneTasks());
+        toDoListAdapter.setNoteList((preferenceSetting) ? toDoList.getToDoList() : toDoList.getToDoListWithoutDoneTasks());
     }
 
     private void setUp() {
-        toDoAdapter = new ToDoAdapter(toDoList.getToDoList(), R.layout.todo_list_item_layout, ToDoListActivity.this);
+        toDoListAdapter = new ToDoListAdapter(toDoList.getToDoList(), R.layout.list_item_to_do_list, ToDoListActivity.this);
 
-        createNoteView = getLayoutInflater().inflate(R.layout.create_note_dialogue_layout, null);
-        detailNoteView = getLayoutInflater().inflate(R.layout.detail_note_dialog_layout, null);
+        createNoteView = getLayoutInflater().inflate(R.layout.dialog_create_to_do, null);
+        detailNoteView = getLayoutInflater().inflate(R.layout.dialog_detail_note, null);
 
         listView = findViewById(R.id.notesListView);
         registerForContextMenu(listView);
-        listView.setAdapter(toDoAdapter);
+        listView.setAdapter(toDoListAdapter);
 
         preferenceChanged(prefs, "showDoneTasksCheckBox");
 
@@ -140,8 +138,8 @@ public class ToDoListActivity extends AppCompatActivity {
         listView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                for (int i = 0; i < toDoAdapter.getNoteList().size(); i++) {
-                    ToDo toDo = toDoAdapter.getNoteList().get(i);
+                for (int i = 0; i < toDoListAdapter.getNoteList().size(); i++) {
+                    ToDo toDo = toDoListAdapter.getNoteList().get(i);
                     View view = listView.getChildAt(i);
                     CheckBox cb = view.findViewById(R.id.doneCheckBox);
 
@@ -152,7 +150,7 @@ public class ToDoListActivity extends AppCompatActivity {
                             System.out.println("note wurde getoggled");
                             toDoList.syncLists();
                             setShownListByPreference();
-                            toDoAdapter.notifyDataSetChanged();
+                            toDoListAdapter.notifyDataSetChanged();
                         }
                     });
                 }
@@ -174,14 +172,6 @@ public class ToDoListActivity extends AppCompatActivity {
                 handleCreateToDo(false);
                 break;
             }
-            case R.id.saveToDo: {
-                try {
-                    handleMenuBarSave();
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            }
             case R.id.preferences_detail: {
                 handleOnPreferences();
                 break;
@@ -194,7 +184,7 @@ public class ToDoListActivity extends AppCompatActivity {
     }
 
     private void handleOnPreferences() {
-        Intent intent = new Intent(this, MySettingsActivity.class);
+        Intent intent = new Intent(this, SettingsActivity.class);
         startActivityForResult(intent, RQ_PREFERENCES);
     }
 
@@ -271,7 +261,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
                 setShownListByPreference();
 
-                toDoAdapter.notifyDataSetChanged();
+                toDoListAdapter.notifyDataSetChanged();
 
                 createNoteDialog.cancel();
 
@@ -298,9 +288,9 @@ public class ToDoListActivity extends AppCompatActivity {
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        getMenuInflater().inflate(R.menu.to_do_list_context_menu, menu);
+        getMenuInflater().inflate(R.menu.context_menu_to_do_list, menu);
 
-        selectedToDo = toDoAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
+        selectedToDo = toDoListAdapter.getNoteList().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
     }
 
     @Override
@@ -332,7 +322,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
     private void handleDelete() {
         toDoList.getToDoList().remove(selectedToDo);
-        toDoAdapter.notifyDataSetChanged();
+        toDoListAdapter.notifyDataSetChanged();
     }
 
     private void handleDetail() {

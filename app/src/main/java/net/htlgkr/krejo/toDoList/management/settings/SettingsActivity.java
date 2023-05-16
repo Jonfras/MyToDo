@@ -1,16 +1,16 @@
-package net.htlgkr.krejo.toDoList.settings;
+package net.htlgkr.krejo.toDoList.management.settings;
 
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MySettingsActivity extends AppCompatActivity {
+public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         getSupportFragmentManager()
                 .beginTransaction()
-                .replace(android.R.id.content, new MySettingsFragment())
+                .replace(android.R.id.content, new SettingsFragment())
                 .commit();
     }
 }

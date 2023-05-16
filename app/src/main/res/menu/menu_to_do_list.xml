@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools" tools:context=".manager.ManagerActivity">
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".management.ManagerActivity">
 
     <item
         android:id="@+id/addToDo" android:icon="@android:drawable/ic_menu_add" app:showAsAction="always"   android:title="Add"/>
-    <item
-        android:id="@+id/saveToDo"
-        android:icon="@android:drawable/ic_menu_save"
-        android:title="Save"
-        app:showAsAction="always|withText" />
     <item
         android:id="@+id/preferences_detail"
         android:icon="@drawable/ic_google_settings"

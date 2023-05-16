@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.toDoList.manager;
+package net.htlgkr.krejo.toDoList.management;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -8,6 +8,7 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import net.htlgkr.krejo.toDoList.R;
+import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
 
 import java.util.List;
 

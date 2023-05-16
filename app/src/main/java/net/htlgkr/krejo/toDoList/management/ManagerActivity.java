@@ -1,10 +1,9 @@
-package net.htlgkr.krejo.toDoList.manager;
+package net.htlgkr.krejo.toDoList.management;
 
 
 import static android.content.ContentValues.TAG;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -28,7 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 import net.htlgkr.krejo.toDoList.R;
-import net.htlgkr.krejo.toDoList.todo.ToDoListActivity;
+import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
+import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListActivity;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,7 +58,7 @@ public class ManagerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_activity);
+        setContentView(R.layout.activity_layout_manager);
 
 
         setUpViews();
@@ -73,6 +73,12 @@ public class ManagerActivity extends AppCompatActivity {
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        try {
+            handleSaveToDoLists();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
 
         listViewOnItemClicklistener();
@@ -141,7 +147,7 @@ public class ManagerActivity extends AppCompatActivity {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } finally {
-            managerAdapter = new ManagerAdapter(managerList, R.layout.manager_list_item_layout, ManagerActivity.this);
+            managerAdapter = new ManagerAdapter(managerList, R.layout.list_item_manager, ManagerActivity.this);
             listView.setAdapter(managerAdapter);
             managerAdapter.notifyDataSetChanged();
         }
@@ -151,17 +157,23 @@ public class ManagerActivity extends AppCompatActivity {
         listView = findViewById(R.id.managerListView);
         registerForContextMenu(listView);
 
-        createToDoListView = getLayoutInflater().inflate(R.layout.create_to_do_list_dialogue, null);
+        createToDoListView = getLayoutInflater().inflate(R.layout.dialog_create_to_do_list, null);
         editTextNameOfToDoList = createToDoListView.findViewById(R.id.editTextToDoListName);
         okButton = createToDoListView.findViewById(R.id.addToDoListOkButton);
         cancelButton = createToDoListView.findViewById(R.id.addToDoListCancelButton);
     }
 
-    public void startNewActivity(View view, int position, long id) throws
-            JsonProcessingException {
+    public void startNewActivity(View view, int position, long id)
+            throws JsonProcessingException {
+        
         handleSaveToDoLists();
+
+        ToDoList toDoList = new ToDoList();
+        toDoList.setName(managerList.get(position).getName());
+        toDoList.setToDoList(managerList.get(position).getToDoList());
+
         Intent intent = new Intent(this, ToDoListActivity.class);
-        intent.putExtra("toDoList", new ToDoList(managerList.get(position)));
+        intent.putExtra("toDoList", toDoList);
         startActivity(intent);
     }
 
@@ -203,7 +215,7 @@ public class ManagerActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_manager, menu);
         return true;
     }
 
@@ -254,14 +266,16 @@ public class ManagerActivity extends AppCompatActivity {
                     managerList.add(toDoList);
                 }
                 managerAdapter.notifyDataSetChanged();
+
                 createToDoListDialog.cancel();
             }
         });
 
         cancelButton.setOnClickListener(v -> {
-            editTextNameOfToDoList.setText("");
             createToDoListDialog.cancel();
         });
+
+        editTextNameOfToDoList.setText("");
 
         createToDoListDialog.show();
     }
@@ -296,7 +310,7 @@ public class ManagerActivity extends AppCompatActivity {
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo
             menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        getMenuInflater().inflate(R.menu.manager_context_menu, menu);
+        getMenuInflater().inflate(R.menu.context_menu_manager, menu);
 
         selectedToDoList = managerAdapter.getToDoLists().get(((AdapterView.AdapterContextMenuInfo) menuInfo).position);
     }

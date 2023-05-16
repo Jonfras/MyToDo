@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.toDoList.todo;
+package net.htlgkr.krejo.toDoList.management.ToDoList;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -11,11 +11,12 @@ import android.widget.TextView;
 
 
 import net.htlgkr.krejo.toDoList.R;
+import net.htlgkr.krejo.toDoList.management.toDo.ToDo;
 
 import java.time.LocalDate;
 import java.util.List;
 
-public class ToDoAdapter extends BaseAdapter {
+public class ToDoListAdapter extends BaseAdapter {
     public List<ToDo> getNoteList() {
         return toDoList;
     }
@@ -29,7 +30,7 @@ public class ToDoAdapter extends BaseAdapter {
         this.toDoList = toDoList;
     }
 
-    public ToDoAdapter(List<ToDo> toDoList, int layoutId, Context context) {
+    public ToDoListAdapter(List<ToDo> toDoList, int layoutId, Context context) {
         this.toDoList = toDoList;
         this.layoutId = layoutId;
         this.context = context;
