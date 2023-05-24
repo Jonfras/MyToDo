@@ -188,7 +188,7 @@ public class ToDoListActivity extends AppCompatActivity {
         startActivityForResult(intent, RQ_PREFERENCES);
     }
 
-    private void handleMenuBarSave() throws JsonProcessingException {
+    private void handleSave() throws JsonProcessingException {
         FileOutputStream fos = null;
         Toast.makeText(ToDoListActivity.this, "Saving...", Toast.LENGTH_SHORT).show();
 
@@ -253,7 +253,7 @@ public class ToDoListActivity extends AppCompatActivity {
                     toDoList.getToDoList().remove(selectedToDo);
                 }
 
-                toDoList.getToDoList().add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.getChecked() : false));
+                toDoList.getToDoList().add(new ToDo(localDate, contentEditText.getText().toString(), (edit) ? selectedToDo.isChecked() : false));
 
                 toDoList.sortLists(ToDo::compareTo);
 
@@ -265,7 +265,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
                 createNoteDialog.cancel();
 
-                handleMenuBarSave();
+                handleSave();
 
             } catch (Exception e) {
                 System.out.println("Not a valid Date");
@@ -301,7 +301,11 @@ public class ToDoListActivity extends AppCompatActivity {
                 break;
             }
             case R.id.delete_item: {
-                handleDelete();
+                try {
+                    handleDelete();
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             }
             case R.id.detail_item:
@@ -320,9 +324,10 @@ public class ToDoListActivity extends AppCompatActivity {
         handleCreateToDo(true);
     }
 
-    private void handleDelete() {
+    private void handleDelete() throws JsonProcessingException {
         toDoList.getToDoList().remove(selectedToDo);
         toDoListAdapter.notifyDataSetChanged();
+        handleSave();
     }
 
     private void handleDetail() {

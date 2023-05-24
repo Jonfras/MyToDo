@@ -68,7 +68,7 @@ public class ToDoListAdapter extends BaseAdapter {
         }
 
         CheckBox checkBox = listItem.findViewById(R.id.doneCheckBox);
-        checkBox.setChecked(toDo.getChecked());
+        checkBox.setChecked(toDo.isChecked());
 
         ((TextView) listItem.findViewById(R.id.noteContentTextView)).setText(toDo.getNoteContent());
 

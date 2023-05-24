@@ -16,6 +16,9 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import java.io.Serializable;
 import java.time.LocalDate;
 
+import lombok.Data;
+
+@Data
 public class ToDo implements Comparable<ToDo>, Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @JsonDeserialize(using = LocalDateDeserializer.class)
@@ -25,7 +28,7 @@ public class ToDo implements Comparable<ToDo>, Serializable {
     @JsonProperty("noteContent")
     private String noteContent;
 
-    @JsonProperty("getChecked")
+    @JsonProperty("checked")
     private boolean checked;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -42,50 +45,13 @@ public class ToDo implements Comparable<ToDo>, Serializable {
         this.localDate = localDate;
         this.noteContent = noteContent;
         this.checked = false;
-        setChecked(checked);
-    }
 
-    public ToDo() {
     }
 
     public boolean toggleChecked() {
         this.checked = !checked;
         return checked;
     }
-
-    public boolean getChecked() {
-        return checked;
-    }
-
-    public void setChecked(boolean checked) {
-        this.checked = checked;
-    }
-
-    public static String serialize(ToDo toDo) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(toDo);
-    }
-
-    public static ToDo deserialize(String line) throws JsonProcessingException {
-        JsonNode node = objectMapper.readTree(line);
-        return objectMapper.treeToValue(node, ToDo.class);
-    }
-
-    public LocalDate getLocalDate() {
-        return localDate;
-    }
-
-    public void setLocalDate(LocalDate localDate) {
-        this.localDate = localDate;
-    }
-
-    public String getNoteContent() {
-        return noteContent;
-    }
-
-    public void setNoteContent(String noteContent) {
-        this.noteContent = noteContent;
-    }
-
 
     @Override
     public int compareTo(ToDo o) {

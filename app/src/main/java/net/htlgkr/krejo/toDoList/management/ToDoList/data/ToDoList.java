@@ -33,7 +33,7 @@ public class ToDoList implements Serializable, Comparable<ToDoList> {
     }
 
     public void syncLists() {
-        toDoListWithoutDoneTasks = toDoList.stream().filter(x -> !x.getChecked()).collect(Collectors.toList());
+        toDoListWithoutDoneTasks = toDoList.stream().filter(x -> !x.isChecked()).collect(Collectors.toList());
         toDoListWithoutDoneTasks.sort(ToDo::compareTo);
     }
 
@@ -42,13 +42,7 @@ public class ToDoList implements Serializable, Comparable<ToDoList> {
         toDoListWithoutDoneTasks.sort(c);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ToDoList toDoList1 = (ToDoList) o;
-        return Objects.equals(name, toDoList1.name) && Objects.equals(toDoList, toDoList1.toDoList) && Objects.equals(toDoListWithoutDoneTasks, toDoList1.toDoListWithoutDoneTasks);
-    }
+
 
     @Override
     public int compareTo(ToDoList o) {
