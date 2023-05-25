@@ -3,10 +3,10 @@ package net.htlgkr.krejo.toDoList.management;
 
 import static android.content.ContentValues.TAG;
 
-import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -26,7 +26,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
+import net.htlgkr.krejo.toDoList.ConstantsMyToDo;
+import net.htlgkr.krejo.toDoList.HTTPSHelper;
 import net.htlgkr.krejo.toDoList.R;
+import net.htlgkr.krejo.toDoList.login.user.User;
 import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
 import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListActivity;
 
@@ -53,6 +56,12 @@ public class ManagerActivity extends AppCompatActivity {
     private ListView listView;
     private ManagerAdapter managerAdapter;
     private static ToDoList selectedToDoList;
+    private User user;
+    private boolean networkAvailable;
+    private static final HTTPSHelper httpsHelper = new HTTPSHelper();
+
+    private static List<ToDoList> allListsFromServer = new ArrayList<>();
+
 
 
     @Override
@@ -60,9 +69,8 @@ public class ManagerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout_manager);
 
-
+        getObjectsFromIntent();
         setUpViews();
-
         setUpManagerList();
 
         if (selectedToDoList != null) {
@@ -84,16 +92,10 @@ public class ManagerActivity extends AppCompatActivity {
         listViewOnItemClicklistener();
     }
 
-    public void printInput(View view) {
-        Log.d(TAG, "”entered printInput”");
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            // RQ WRITE STORAGE ist just any constant value to identify the request
-            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    RQ_WRITE_STORAGE);
-        } else {
-            System.out.println("woow");
-        }
+    private void getObjectsFromIntent() {
+        Bundle bundle = getIntent().getExtras();
+        user = (User) bundle.get("user");
+        networkAvailable = (boolean) bundle.get("networkAvailable");
     }
 
 
@@ -107,7 +109,7 @@ public class ManagerActivity extends AppCompatActivity {
                     .collect(Collectors.toList());
 
             if (!tempList.isEmpty()) {
-                managerList.get( managerList.indexOf( tempList.get(0) ))
+                managerList.get(managerList.indexOf(tempList.get(0)))
                         .setToDoList(editedToDoList.getToDoList());
             }
         }
@@ -140,17 +142,41 @@ public class ManagerActivity extends AppCompatActivity {
     }
 
     private void setUpManagerList() {
-        try {
-            managerList = readManagerJSON(getInputStream(FILENAME));
-        } catch (FileNotFoundException e) {
-            Toast.makeText(ManagerActivity.this, "No ToDoListsFound in " + FILENAME, Toast.LENGTH_SHORT).show();
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            managerAdapter = new ManagerAdapter(managerList, R.layout.list_item_manager, ManagerActivity.this);
-            listView.setAdapter(managerAdapter);
-            managerAdapter.notifyDataSetChanged();
+        if (networkAvailable) {
+                getToDoListsFromServerAsync();
+        } else {
+            try {
+                managerList = readManagerJSON(getInputStream(FILENAME));
+            } catch (FileNotFoundException e) {
+                Toast.makeText(ManagerActivity.this, "No ToDoListsFound in " + FILENAME, Toast.LENGTH_SHORT).show();
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            } finally {
+                managerAdapter = new ManagerAdapter(managerList, R.layout.list_item_manager, ManagerActivity.this);
+                listView.setAdapter(managerAdapter);
+                managerAdapter.notifyDataSetChanged();
+            }
         }
+    }
+
+    private void getToDoListsFromServerAsync() {
+        @SuppressLint("StaticFieldLeak") AsyncTask<Integer, Void, List<ToDoList>> asyncTask
+                = new AsyncTask<Integer, Void, List<ToDoList>>() {
+            @Override
+            protected List<ToDoList> doInBackground(Integer... integers) {
+                allListsFromServer = httpsHelper.sendRequest(ConstantsMyToDo.TODOLISTS
+                        + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
+                        + "&"
+                        + ConstantsMyToDo.PASSWORD + "=" + user.getPassword(),
+                        ConstantsMyToDo.GET,
+                        )
+            }
+
+            @Override
+            protected void onPostExecute(List<ToDoList> serverManagerList) {
+
+            }
+            }
     }
 
     private void setUpViews() {
@@ -165,7 +191,7 @@ public class ManagerActivity extends AppCompatActivity {
 
     public void startNewActivity(View view, int position, long id)
             throws JsonProcessingException {
-        
+
         handleSaveToDoLists();
 
         ToDoList toDoList = new ToDoList();

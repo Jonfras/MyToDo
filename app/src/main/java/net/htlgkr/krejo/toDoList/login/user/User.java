@@ -17,4 +17,8 @@ public class User implements Serializable {
         this.password = password;
         this.name = name;
     }
+
+    public User() {
+
+    }
 }

@@ -17,17 +17,16 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import net.htlgkr.krejo.toDoList.ConstantsMyToDo;
+import net.htlgkr.krejo.toDoList.HTTPSHelper;
 import net.htlgkr.krejo.toDoList.R;
 import net.htlgkr.krejo.toDoList.login.exceptions.InvalidUserException;
 import net.htlgkr.krejo.toDoList.login.user.User;
 import net.htlgkr.krejo.toDoList.login.user.UserDTO;
 import net.htlgkr.krejo.toDoList.login.user.UserRessource;
 import net.htlgkr.krejo.toDoList.management.ManagerActivity;
-import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListActivity;
-import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import javax.net.ssl.HttpsURLConnection;
 
 public class LoginActivity extends AppCompatActivity {
+
     // TODO: 24.05.2023 gonz spät amoi wos mocha dass ma offline a se irgendwie eiloggn ko
     private User user;
     private UserRessource userRessource;
@@ -48,20 +48,28 @@ public class LoginActivity extends AppCompatActivity {
     private EditText editTextPassword;
     private Button buttonLoginOK;
     private ObjectMapper objectMapper = new ObjectMapper();
-    private static final String REGISTER_URL = "https://www.docsced.at/notesserver/register.php";
+    boolean networkAvailable;
+    private final HTTPSHelper httpsHelper = new HTTPSHelper();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout_login);
 
-        if (!isNetworkAvailable()){
+        if (!(networkAvailable = isNetworkAvailable())){
             return;
         }
+        initialize();
 
         setUpViews();
         buttonLoginOK.setOnClickListener(v -> sendRegisterPOSTRequestAsync());
 
+    }
+
+    private void initialize() {
+        user = new User();
+        userRessource = new UserRessource();
+        userDTO = new UserDTO();
     }
 
     private void sendRegisterPOSTRequestAsync() {
@@ -69,11 +77,12 @@ public class LoginActivity extends AppCompatActivity {
                 = new AsyncTask<Void, Void, UserRessource>() {
             @Override
             protected UserRessource doInBackground(Void... voids) {
+
                 try {
-                    userRessource = sendRegisterPOSTRequest();
+                    userRessource = (UserRessource) httpsHelper.sendRequest("register.php", ConstantsMyToDo.POST, createDTOFromEditTexts(), userRessource);
                     return userRessource;
                 } catch (InvalidUserException e) {
-                    showToasts();
+
                     return null;
                 }
             }
@@ -87,6 +96,7 @@ public class LoginActivity extends AppCompatActivity {
                                     + userRessource.getUserId() + " was found");
                     startNewActivity();
                 } else {
+                    showToasts();
                     Log.e(TAG, "onPostExecute: userRessource is null");
                 }
             }
@@ -100,53 +110,56 @@ public class LoginActivity extends AppCompatActivity {
         Toast.makeText(this, "Remember no spaces are allowed!", Toast.LENGTH_SHORT).show();
     }
 
-    private UserRessource sendRegisterPOSTRequest() throws InvalidUserException {
-        try {
-            userDTO = createDTOFromEditTexts();
-
-
-            HttpsURLConnection httpsURLConnection = null;
-            String response = "";
-
-            try {
-                httpsURLConnection = getHttpsURLConnection();
-                String body = objectMapper.writeValueAsString(userDTO);
-
-                writeOutput(body, httpsURLConnection);
-
-                if (httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
-                    response = getResponse(httpsURLConnection);
-                    Log.i(TAG, "sendRegisterPOSTRequest: response from server: " + response);
-                } else {
-                    Log.e(TAG, "POST Request failed: "
-                            + httpsURLConnection.getResponseCode()
-                            + " " +
-                            httpsURLConnection.getResponseMessage());
-                }
-
-                httpsURLConnection.disconnect();
-
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            return objectMapper.readValue(response, UserRessource.class);
-
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
+//    private UserRessource sendRequest(String url, String method) throws InvalidUserException {
+//        try {
+//            userDTO = createDTOFromEditTexts();
+//
+//
+//            HttpsURLConnection httpsURLConnection = null;
+//            String response = "";
+//
+//            try {
+//                httpsURLConnection = getHttpsURLConnection(url, method);
+//                String body = objectMapper.writeValueAsString(userDTO);
+//
+//                writeOutput(body, httpsURLConnection);
+//
+//                if (httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
+//                    response = getResponse(httpsURLConnection);
+//                    Log.i(TAG, "sendRegisterPOSTRequest: response from server: " + response);
+//                } else {
+//                    Log.e(TAG, "POST Request failed: "
+//                            + httpsURLConnection.getResponseCode()
+//                            + " " +
+//                            httpsURLConnection.getResponseMessage());
+//                }
+//
+//                httpsURLConnection.disconnect();
+//
+//
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            return objectMapper.readValue(response, UserRessource.class);
+//
+//        } catch (RuntimeException e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
 
     private UserDTO createDTOFromEditTexts() throws InvalidUserException {
         String usernameContent = editTextUsername.getText().toString();
         String passwordContent = editTextPassword.getText().toString();
 
-        if (usernameContent.length() >= 8 && passwordContent.length() >= 8 && !usernameContent.contains(" ") && !passwordContent.contains(" ")) {
+        if (usernameContent.length() >= 8
+                && passwordContent.length() >= 8
+                && !usernameContent.contains(" ")
+                && !passwordContent.contains(" ")) {
 
             String name = usernameContent.charAt(0) + " " + usernameContent.substring(1);
             UserDTO dto = new UserDTO();
@@ -168,7 +181,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         boolean isNetworkActive = activeNetworkInfo != null && activeNetworkInfo.isConnected();
         Log.i(TAG, "isNetworkAvailable() returned: " + isNetworkActive);
@@ -180,6 +194,7 @@ public class LoginActivity extends AppCompatActivity {
     private void startNewActivity() {
         Intent intent = new Intent(this, ManagerActivity.class);
         intent.putExtra("user", createUser());
+        intent.putExtra("networkAvailable", networkAvailable);
         // TODO: 24.05.2023 get do de listen vom server und gibs mid oda so
         startActivity(intent);
     }
@@ -192,13 +207,13 @@ public class LoginActivity extends AppCompatActivity {
         return user;
     }
 
-    private static HttpsURLConnection getHttpsURLConnection() throws IOException {
+    private static HttpsURLConnection getHttpsURLConnection(String urlString, String method) throws IOException {
         HttpsURLConnection httpsURLConnection;
 
-        URL url = new URL(REGISTER_URL);
+        URL url = new URL(urlString);
         httpsURLConnection = (HttpsURLConnection) url.openConnection();
 
-        httpsURLConnection.setRequestMethod("POST");
+        httpsURLConnection.setRequestMethod(method);
         httpsURLConnection.setRequestProperty("Content-Type", "application/json; utf-8");
         httpsURLConnection.setRequestProperty("Accept", "application/json");
         httpsURLConnection.setDoOutput(true);
@@ -206,7 +221,8 @@ public class LoginActivity extends AppCompatActivity {
         return httpsURLConnection;
     }
 
-    private static void writeOutput(String body, HttpsURLConnection httpsURLConnection) throws IOException {
+    private static void writeOutput(String body, HttpsURLConnection httpsURLConnection)
+            throws IOException {
         try (OutputStream os = httpsURLConnection.getOutputStream()) {
             byte[] input = body.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
@@ -214,9 +230,9 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private static String getResponse(HttpURLConnection httpURLConnection) throws IOException {
-
         StringBuilder response = new StringBuilder();
-        BufferedReader in = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(httpURLConnection.getInputStream()));
         String inputLine;
 
         while ((inputLine = in.readLine()) != null) {
