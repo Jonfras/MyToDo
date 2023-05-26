@@ -2,12 +2,11 @@ package net.htlgkr.krejo.toDoList.management.ToDoList.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import net.htlgkr.krejo.toDoList.management.toDo.ToDo;
+import net.htlgkr.krejo.toDoList.management.toDo.data.ToDo;
 
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import lombok.*;
@@ -19,6 +18,12 @@ public class ToDoList implements Serializable, Comparable<ToDoList> {
     private List<ToDo> toDoList;
     @JsonIgnore
     private List<ToDo> toDoListWithoutDoneTasks;
+
+    public ToDoList(String name, String additionalData, List<ToDo> toDoList) {
+        this.name = name;
+        this.additionalData = additionalData;
+        this.toDoList = toDoList;
+    }
 
     public ToDoList() {
     }

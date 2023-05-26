@@ -32,8 +32,14 @@
         android:textSize="22dp" />
 
     <Button
-        android:id="@+id/button_login_ok"
+        android:id="@+id/button_login_register"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@android:string/ok" />
+        android:text="Register" />
+
+    <Button
+        android:id="@+id/button_login_login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Login" />
 </LinearLayout>

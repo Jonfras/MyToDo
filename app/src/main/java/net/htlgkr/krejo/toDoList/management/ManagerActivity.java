@@ -30,8 +30,10 @@ import net.htlgkr.krejo.toDoList.ConstantsMyToDo;
 import net.htlgkr.krejo.toDoList.HTTPSHelper;
 import net.htlgkr.krejo.toDoList.R;
 import net.htlgkr.krejo.toDoList.login.user.User;
+import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListDataService;
 import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
 import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListActivity;
+import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoListResource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -60,8 +63,7 @@ public class ManagerActivity extends AppCompatActivity {
     private boolean networkAvailable;
     private static final HTTPSHelper httpsHelper = new HTTPSHelper();
 
-    private static List<ToDoList> allListsFromServer = new ArrayList<>();
-
+    private static List<ToDoListResource> allToDoListRessourcesFromServer = new ArrayList<>();
 
 
     @Override
@@ -143,7 +145,9 @@ public class ManagerActivity extends AppCompatActivity {
 
     private void setUpManagerList() {
         if (networkAvailable) {
-                getToDoListsFromServerAsync();
+            getToDoListRessourcesFromServerAsync();
+            managerList = ToDoListDataService
+                    .convertToDoListResourceToToDoListEntity(allToDoListRessourcesFromServer);
         } else {
             try {
                 managerList = readManagerJSON(getInputStream(FILENAME));
@@ -151,32 +155,56 @@ public class ManagerActivity extends AppCompatActivity {
                 Toast.makeText(ManagerActivity.this, "No ToDoListsFound in " + FILENAME, Toast.LENGTH_SHORT).show();
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
-            } finally {
-                managerAdapter = new ManagerAdapter(managerList, R.layout.list_item_manager, ManagerActivity.this);
-                listView.setAdapter(managerAdapter);
-                managerAdapter.notifyDataSetChanged();
             }
         }
+        managerAdapter = new ManagerAdapter(managerList, R.layout.list_item_manager, ManagerActivity.this);
+        listView.setAdapter(managerAdapter);
+        managerAdapter.notifyDataSetChanged();
     }
 
-    private void getToDoListsFromServerAsync() {
-        @SuppressLint("StaticFieldLeak") AsyncTask<Integer, Void, List<ToDoList>> asyncTask
-                = new AsyncTask<Integer, Void, List<ToDoList>>() {
+    private void getToDoListRessourcesFromServerAsync() {
+        @SuppressLint("StaticFieldLeak") AsyncTask<Integer, Void, List<ToDoListResource>> asyncTask
+                = new AsyncTask<Integer, Void, List<ToDoListResource>>() {
             @Override
-            protected List<ToDoList> doInBackground(Integer... integers) {
-                allListsFromServer = httpsHelper.sendRequest(ConstantsMyToDo.TODOLISTS
-                        + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
-                        + "&"
-                        + ConstantsMyToDo.PASSWORD + "=" + user.getPassword(),
-                        ConstantsMyToDo.GET,
-                        )
+            protected List<ToDoListResource> doInBackground(Integer... integers) {
+                try {
+                    allToDoListRessourcesFromServer = (List<ToDoListResource>) httpsHelper.sendRequest(ConstantsMyToDo.TODOLISTS
+                                    + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
+                                    + "&"
+                                    + ConstantsMyToDo.PASSWORD + "=" + user.getPassword(),
+                            ConstantsMyToDo.GET,
+                            Optional.empty(),
+                            allToDoListRessourcesFromServer
+                    );
+
+                } catch (IOException e) {
+                    allToDoListRessourcesFromServer = null;
+                    Log.e(TAG, "doInBackground: Todolists couldn't be downloaded");
+                    throw new RuntimeException(e);
+                }
+                return allToDoListRessourcesFromServer;
             }
 
             @Override
-            protected void onPostExecute(List<ToDoList> serverManagerList) {
+            protected void onPostExecute(List<ToDoListResource> serverManagerList) {
+                if (allToDoListRessourcesFromServer == null || allToDoListRessourcesFromServer.isEmpty()) {
+                    Log.e(TAG, "onPostExecute: No toDoLists were found");
+                } else {
+                    System.out.println("The following todolists were found:");
+                    allToDoListRessourcesFromServer.forEach(System.out::println);
+                }
+            }
+        };
+        asyncTask.execute();
+    }
 
-            }
-            }
+    private List<ToDoList> filterRelevantLists() {
+        int userId = user.getUserId();
+        List<ToDoListResource> relevantResources = allToDoListRessourcesFromServer
+                .stream()
+                .filter(toDoList -> toDoList.getOwnerId() == userId)
+                .collect(Collectors.toList());
+        return ToDoListDataService.convertToDoListResourceToToDoListEntity(relevantResources);
     }
 
     private void setUpViews() {
@@ -355,7 +383,7 @@ public class ManagerActivity extends AppCompatActivity {
             default:
                 return false;
         }
-        return false;
+        return false; ///data/data/net.htlgkr.krejo.toDoList/code_cache/.ll
     }
 
     private void handleDelete() {

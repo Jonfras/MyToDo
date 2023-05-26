@@ -11,7 +11,7 @@ import android.widget.TextView;
 
 
 import net.htlgkr.krejo.toDoList.R;
-import net.htlgkr.krejo.toDoList.management.toDo.ToDo;
+import net.htlgkr.krejo.toDoList.management.toDo.data.ToDo;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -70,7 +70,7 @@ public class ToDoListAdapter extends BaseAdapter {
         CheckBox checkBox = listItem.findViewById(R.id.doneCheckBox);
         checkBox.setChecked(toDo.isChecked());
 
-        ((TextView) listItem.findViewById(R.id.noteContentTextView)).setText(toDo.getNoteContent());
+        ((TextView) listItem.findViewById(R.id.noteContentTextView)).setText(toDo.getContent());
 
         return listItem;
     }

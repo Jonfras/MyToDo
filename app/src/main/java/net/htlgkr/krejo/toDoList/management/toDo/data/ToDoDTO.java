@@ -1,4 +1,4 @@
-package net.htlgkr.krejo.toDoList.management.toDo;
+package net.htlgkr.krejo.toDoList.management.toDo.data;
 
 import java.time.LocalDateTime;
 

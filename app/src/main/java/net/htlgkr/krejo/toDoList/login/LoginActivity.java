@@ -16,7 +16,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.htlgkr.krejo.toDoList.ConstantsMyToDo;
@@ -35,6 +34,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -46,7 +46,8 @@ public class LoginActivity extends AppCompatActivity {
     private UserDTO userDTO;
     private EditText editTextUsername;
     private EditText editTextPassword;
-    private Button buttonLoginOK;
+    private Button buttonRegister;
+    private Button buttonLogin;
     private ObjectMapper objectMapper = new ObjectMapper();
     boolean networkAvailable;
     private final HTTPSHelper httpsHelper = new HTTPSHelper();
@@ -56,13 +57,14 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_layout_login);
 
-        if (!(networkAvailable = isNetworkAvailable())){
+        if (!(networkAvailable = isNetworkAvailable())) {
             return;
         }
         initialize();
 
         setUpViews();
-        buttonLoginOK.setOnClickListener(v -> sendRegisterPOSTRequestAsync());
+        buttonRegister.setOnClickListener(v -> sendRegisterPOSTRequestAsync());
+        //buttonLogin.setOnClickListener(v -> sendLoginRequestAsync());
 
     }
 
@@ -77,20 +79,23 @@ public class LoginActivity extends AppCompatActivity {
                 = new AsyncTask<Void, Void, UserRessource>() {
             @Override
             protected UserRessource doInBackground(Void... voids) {
-
                 try {
-                    userRessource = (UserRessource) httpsHelper.sendRequest("register.php", ConstantsMyToDo.POST, createDTOFromEditTexts(), userRessource);
+                    userDTO = createDTOFromEditTexts();
+                    userRessource = (UserRessource) httpsHelper.sendRequest("register.php",
+                            ConstantsMyToDo.POST,
+                            Optional.of(userDTO),
+                            userRessource);
                     return userRessource;
-                } catch (InvalidUserException e) {
-
-                    return null;
+                } catch (IOException | InvalidUserException e) {
+                    userRessource = new UserRessource();
                 }
+                return userRessource;
             }
 
             @SuppressLint("StaticFieldLeak")
             @Override
             protected void onPostExecute(UserRessource userRessource) {
-                if (userRessource != null) {
+                if (userRessource.getUserId() > 1) {
                     Log.i(TAG,
                             "onPostExecute: new userRessource with id "
                                     + userRessource.getUserId() + " was found");
@@ -104,52 +109,33 @@ public class LoginActivity extends AppCompatActivity {
 
         asyncTask.execute();
     }
+        //BRAUCH I SPÄTER NU
+//    private void sendLoginRequestAsync() {
+//        @SuppressLint("StaticFieldLeak") AsyncTask<Void, Void, UserRessource> asyncTask
+//                = new AsyncTask<Void, Void, UserRessource>() {
+//            @Override
+//            protected UserRessource doInBackground(Void... voids) {
+//                try {
+//                    userDTO = createDTOFromEditTexts();
+//                } catch (InvalidUserException e) {
+//                    throw new RuntimeException(e);
+//                }
+//                userRessource = (UserRessource) httpsHelper.sendRequest()
+//            }
+//
+//            @SuppressLint("StaticFieldLeak")
+//            @Override
+//            protected void onPostExecute(UserRessource userRessource) {
+//            }
+//
+//        };
+//        asyncTask.execute();
+//    }
 
     private void showToasts() {
         Toast.makeText(this, "Invalid username or password!", Toast.LENGTH_SHORT).show();
         Toast.makeText(this, "Remember no spaces are allowed!", Toast.LENGTH_SHORT).show();
     }
-
-//    private UserRessource sendRequest(String url, String method) throws InvalidUserException {
-//        try {
-//            userDTO = createDTOFromEditTexts();
-//
-//
-//            HttpsURLConnection httpsURLConnection = null;
-//            String response = "";
-//
-//            try {
-//                httpsURLConnection = getHttpsURLConnection(url, method);
-//                String body = objectMapper.writeValueAsString(userDTO);
-//
-//                writeOutput(body, httpsURLConnection);
-//
-//                if (httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
-//                    response = getResponse(httpsURLConnection);
-//                    Log.i(TAG, "sendRegisterPOSTRequest: response from server: " + response);
-//                } else {
-//                    Log.e(TAG, "POST Request failed: "
-//                            + httpsURLConnection.getResponseCode()
-//                            + " " +
-//                            httpsURLConnection.getResponseMessage());
-//                }
-//
-//                httpsURLConnection.disconnect();
-//
-//
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//
-//            return objectMapper.readValue(response, UserRessource.class);
-//
-//        } catch (RuntimeException e) {
-//            e.printStackTrace();
-//            throw new RuntimeException(e);
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
 
 
     private UserDTO createDTOFromEditTexts() throws InvalidUserException {
@@ -176,8 +162,9 @@ public class LoginActivity extends AppCompatActivity {
     private void setUpViews() {
         editTextUsername = findViewById(R.id.editText_login_name);
         editTextPassword = findViewById(R.id.editText_login_password);
-        buttonLoginOK = findViewById(R.id.button_login_ok);
-
+        buttonRegister = findViewById(R.id.button_login_register);
+        buttonLogin = findViewById(R.id.button_login_login);
+        buttonLogin.setClickable(false);
     }
 
     private boolean isNetworkAvailable() {
@@ -205,42 +192,5 @@ public class LoginActivity extends AppCompatActivity {
                 userDTO.getPassword(),
                 userDTO.getName());
         return user;
-    }
-
-    private static HttpsURLConnection getHttpsURLConnection(String urlString, String method) throws IOException {
-        HttpsURLConnection httpsURLConnection;
-
-        URL url = new URL(urlString);
-        httpsURLConnection = (HttpsURLConnection) url.openConnection();
-
-        httpsURLConnection.setRequestMethod(method);
-        httpsURLConnection.setRequestProperty("Content-Type", "application/json; utf-8");
-        httpsURLConnection.setRequestProperty("Accept", "application/json");
-        httpsURLConnection.setDoOutput(true);
-
-        return httpsURLConnection;
-    }
-
-    private static void writeOutput(String body, HttpsURLConnection httpsURLConnection)
-            throws IOException {
-        try (OutputStream os = httpsURLConnection.getOutputStream()) {
-            byte[] input = body.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
-        }
-    }
-
-    private static String getResponse(HttpURLConnection httpURLConnection) throws IOException {
-        StringBuilder response = new StringBuilder();
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(httpURLConnection.getInputStream()));
-        String inputLine;
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-
-        in.close();
-
-        return response.toString();
     }
 }

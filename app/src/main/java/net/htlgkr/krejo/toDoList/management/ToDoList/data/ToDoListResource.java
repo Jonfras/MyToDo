@@ -8,4 +8,11 @@ public class ToDoListResource {
     private int ownerId;
     private String name;
     private String additionalData;
+
+    public ToDoListResource(int id, int ownerId, String name, String additionalData) {
+        this.id = id;
+        this.ownerId = ownerId;
+        this.name = name;
+        this.additionalData = additionalData;
+    }
 }

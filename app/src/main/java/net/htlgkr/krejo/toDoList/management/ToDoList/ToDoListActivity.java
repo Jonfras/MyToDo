@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.htlgkr.krejo.toDoList.R;
 import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
 import net.htlgkr.krejo.toDoList.management.settings.SettingsActivity;
-import net.htlgkr.krejo.toDoList.management.toDo.ToDo;
+import net.htlgkr.krejo.toDoList.management.toDo.data.ToDo;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -319,7 +319,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
     private void handleEdit() {
         dateTimeEditText.setText(selectedToDo.getLocalDate().toString());
-        contentEditText.setText(selectedToDo.getNoteContent());
+        contentEditText.setText(selectedToDo.getContent());
 
         handleCreateToDo(true);
     }
@@ -342,7 +342,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
         TextView tempDateTxtView = (TextView) detailNoteView.findViewById(R.id.detailDateTxtView);
         tempDateTxtView.setText(selectedToDo.getLocalDate().toString());
-        ((TextView) detailNoteView.findViewById(R.id.detailContentTxtView)).setText(selectedToDo.getNoteContent());
+        ((TextView) detailNoteView.findViewById(R.id.detailContentTxtView)).setText(selectedToDo.getContent());
 
         if (selectedToDo.getLocalDate().isBefore(LocalDate.now())) {
             tempDateTxtView.setBackgroundColor(Color.RED);

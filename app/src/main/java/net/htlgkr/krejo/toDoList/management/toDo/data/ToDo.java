@@ -1,10 +1,8 @@
-package net.htlgkr.krejo.toDoList.management.toDo;
+package net.htlgkr.krejo.toDoList.management.toDo.data;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -25,8 +23,8 @@ public class ToDo implements Comparable<ToDo>, Serializable {
     @JsonSerialize(using = LocalDateSerializer.class)
     private LocalDate localDate;
 
-    @JsonProperty("noteContent")
-    private String noteContent;
+    @JsonProperty("content")
+    private String content;
 
     @JsonProperty("checked")
     private boolean checked;
@@ -40,11 +38,15 @@ public class ToDo implements Comparable<ToDo>, Serializable {
 
     @JsonCreator
     public ToDo(@JsonProperty("localDate") LocalDate localDate,
-                @JsonProperty("noteContent") String noteContent,
+                @JsonProperty("content") String content,
                 @JsonProperty("getChecked") boolean checked) {
         this.localDate = localDate;
-        this.noteContent = noteContent;
+        this.content = content;
         this.checked = false;
+
+    }
+
+    public ToDo() {
 
     }
 

@@ -16,6 +16,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.Optional;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -23,21 +25,25 @@ public class HTTPSHelper {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
-    public Object sendRequest(String url, String method, Object dto, Object responseType) throws InvalidUserException {
-        try {
+    public Object sendRequest(String url, String method, Optional<Object> dto, Object responseType)
+            throws IOException {
+
             HttpsURLConnection httpsURLConnection = null;
             String response = "";
 
-            try {
                 httpsURLConnection = getHttpsURLConnection(url, method);
 
                 // TODO: 25.05.2023 Moch des so dynamisch dass get und delete a geht mit der methode!
-                if (method.equals(ConstantsMyToDo.POST) || method.equals(ConstantsMyToDo.PUT))
-                String body = objectMapper.writeValueAsString(dto);
+                if ((method.equals(ConstantsMyToDo.POST) || method.equals(ConstantsMyToDo.PUT))
+                    && dto.isPresent()) {
+                    String body = objectMapper.writeValueAsString(dto.get());
+                    Log.i(TAG, "sendRequest: body: " + body);
+                    writeOutput(body, httpsURLConnection);
+                }
 
-                writeOutput(body, httpsURLConnection);
 
-                if (httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
+                if (httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_CREATED
+                    || httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     response = getResponse(httpsURLConnection);
                     Log.i(TAG, "sendRegisterPOSTRequest: response from server: " + response);
                 } else {
@@ -46,22 +52,9 @@ public class HTTPSHelper {
                             + " " +
                             httpsURLConnection.getResponseMessage());
                 }
-
                 httpsURLConnection.disconnect();
-
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
+                //i woas ned ob des mit listn a geht
             return objectMapper.readValue(response, responseType.getClass());
-
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private static HttpsURLConnection getHttpsURLConnection(String urlString, String method) throws IOException {
@@ -73,7 +66,10 @@ public class HTTPSHelper {
         httpsURLConnection.setRequestMethod(method);
         httpsURLConnection.setRequestProperty("Content-Type", "application/json; utf-8");
         httpsURLConnection.setRequestProperty("Accept", "application/json");
-        httpsURLConnection.setDoOutput(true);
+
+        if (method.equals(ConstantsMyToDo.POST) || method.equals(ConstantsMyToDo.PUT)) {
+            httpsURLConnection.setDoOutput(true);
+        }
 
         return httpsURLConnection;
     }
