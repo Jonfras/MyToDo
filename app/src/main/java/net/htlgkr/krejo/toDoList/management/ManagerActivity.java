@@ -85,12 +85,6 @@ public class ManagerActivity extends AppCompatActivity {
             }
         }
 
-        try {
-            handleSaveToDoLists();
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
         listViewOnItemClicklistener();
     }
 
@@ -135,7 +129,7 @@ public class ManagerActivity extends AppCompatActivity {
             try {
                 selectedToDoList = managerAdapter.getToDoLists().get(position);
                 startNewActivity(view, position, id);
-            } catch (JsonProcessingException e) {
+            } catch (IOException e) {
                 Log.e(TAG, "listViewOnItemClicklistener:" +
                         " todoList couldn't be saved before switching Activity");
                 throw new RuntimeException(e);
@@ -146,8 +140,9 @@ public class ManagerActivity extends AppCompatActivity {
     private void setUpManagerList() {
         if (networkAvailable) {
             getToDoListRessourcesFromServerAsync();
+            filterRelevantLists();
             managerList = ToDoListDataService
-                    .convertToDoListResourceToToDoListEntity(allToDoListRessourcesFromServer);
+                    .convertToDoListResourceListToToDoListEntityList(allToDoListRessourcesFromServer);
         } else {
             try {
                 managerList = readManagerJSON(getInputStream(FILENAME));
@@ -204,7 +199,7 @@ public class ManagerActivity extends AppCompatActivity {
                 .stream()
                 .filter(toDoList -> toDoList.getOwnerId() == userId)
                 .collect(Collectors.toList());
-        return ToDoListDataService.convertToDoListResourceToToDoListEntity(relevantResources);
+        return ToDoListDataService.convertToDoListResourceListToToDoListEntityList(relevantResources);
     }
 
     private void setUpViews() {
@@ -218,7 +213,7 @@ public class ManagerActivity extends AppCompatActivity {
     }
 
     public void startNewActivity(View view, int position, long id)
-            throws JsonProcessingException {
+            throws IOException {
 
         handleSaveToDoLists();
 
@@ -282,7 +277,7 @@ public class ManagerActivity extends AppCompatActivity {
             case R.id.saveToDoList:
                 try {
                     handleSaveToDoLists();
-                } catch (JsonProcessingException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
                 break;
@@ -334,7 +329,53 @@ public class ManagerActivity extends AppCompatActivity {
         createToDoListDialog.show();
     }
 
-    private void handleSaveToDoLists() throws JsonProcessingException {
+    private void handleSaveToDoLists() throws IOException {
+        if (networkAvailable) {
+            addToDoListToServerAsync();
+        } else {
+            writeToDoListsToFile();
+        }
+    }
+
+    private void addToDoListToServerAsync() {
+        @SuppressLint("StaticFieldLeak") AsyncTask<ToDoList, Void, ToDoListResource> asyncTask
+                = new AsyncTask<ToDoList, Void, ToDoListResource>() {
+            @Override
+            protected ToDoListResource doInBackground(ToDoList... toDoLists) {
+                System.out.println(toDoLists[0]);
+                ToDoListResource toDoListResource;
+                try {
+                        toDoListResource = (ToDoListResource) httpsHelper.sendRequest(ConstantsMyToDo.TODOLISTS
+                                        + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
+                                        + "&"
+                                        + ConstantsMyToDo.PASSWORD + "=" + user.getPassword(),
+                                ConstantsMyToDo.POST,
+                                Optional.of(ToDoListDataService.convertToDoListEntityListToToDoListDTOList(//todo ---- toDoLists[0])),
+                                new ToDoListResource());
+
+                } catch (IOException e) {
+                    Log.e(TAG, "doInBackground: ToDoLists couldn't be sent to server");
+                    toDoListResource = null;
+                }
+                return toDoListResource;
+            }
+
+            @Override
+            protected void onPostExecute(ToDoListResource resource) {
+
+                if (resource == null) {
+                    Log.e(TAG, "onPostExecute: No TodoList was uploaded");
+                } else {
+                    System.out.println("The following todolist was uploaded:");
+                    System.out.println(resource);
+                }
+            }
+        };
+        asyncTask.execute();
+
+    }
+
+    private void writeToDoListsToFile() throws JsonProcessingException {
         FileOutputStream fos = null;
         Toast.makeText(ManagerActivity.this, "Saving...", Toast.LENGTH_SHORT).show();
 

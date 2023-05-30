@@ -25,16 +25,13 @@ public class HTTPSHelper {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
-    public Object sendRequest(String url, String method, Optional<Object> dto, Object responseType)
+    public Object sendRequest(String siteURL, String method, Optional<Object> dto, Object responseType)
             throws IOException {
 
-            HttpsURLConnection httpsURLConnection = null;
-            String response = "";
+        HttpsURLConnection httpsURLConnection = getHttpsURLConnection(siteURL, method);
+        String response = "";
 
-                httpsURLConnection = getHttpsURLConnection(url, method);
-
-                // TODO: 25.05.2023 Moch des so dynamisch dass get und delete a geht mit der methode!
-                if ((method.equals(ConstantsMyToDo.POST) || method.equals(ConstantsMyToDo.PUT))
+        if ((method.equals(ConstantsMyToDo.POST) || method.equals(ConstantsMyToDo.PUT))
                     && dto.isPresent()) {
                     String body = objectMapper.writeValueAsString(dto.get());
                     Log.i(TAG, "sendRequest: body: " + body);
@@ -57,10 +54,10 @@ public class HTTPSHelper {
             return objectMapper.readValue(response, responseType.getClass());
     }
 
-    private static HttpsURLConnection getHttpsURLConnection(String urlString, String method) throws IOException {
+    private static HttpsURLConnection getHttpsURLConnection(String siteURL, String method) throws IOException {
         HttpsURLConnection httpsURLConnection;
 
-        URL url = new URL(ConstantsMyToDo.BASE_URL + urlString);
+        URL url = new URL(ConstantsMyToDo.BASE_URL + siteURL);
         httpsURLConnection = (HttpsURLConnection) url.openConnection();
 
         httpsURLConnection.setRequestMethod(method);

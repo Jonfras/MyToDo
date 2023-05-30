@@ -161,7 +161,6 @@ public class ToDoListActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_to_do_list, menu);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         return true;
     }
 

@@ -87,6 +87,7 @@ public class LoginActivity extends AppCompatActivity {
                             userRessource);
                     return userRessource;
                 } catch (IOException | InvalidUserException e) {
+                    e.printStackTrace();
                     userRessource = new UserRessource();
                 }
                 return userRessource;

@@ -15,4 +15,8 @@ public class ToDoListResource {
         this.name = name;
         this.additionalData = additionalData;
     }
+
+    public ToDoListResource() {
+
+    }
 }
