@@ -13,11 +13,13 @@ import lombok.*;
 
 @Data
 public class ToDoList implements Serializable, Comparable<ToDoList> {
+    private Integer id;
     private String name;
     private String additionalData;
     private List<ToDo> toDoList;
     @JsonIgnore
     private List<ToDo> toDoListWithoutDoneTasks;
+
 
     public ToDoList(String name, String additionalData, List<ToDo> toDoList) {
         this.name = name;

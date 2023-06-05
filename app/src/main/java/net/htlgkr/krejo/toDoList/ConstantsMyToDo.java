@@ -9,4 +9,5 @@ public class ConstantsMyToDo {
     public static final String TODOLISTS = "todolists.php?";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String ID = "id";
 }

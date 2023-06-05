@@ -6,6 +6,7 @@ import static android.content.ContentValues.TAG;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Region;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -28,11 +29,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.htlgkr.krejo.toDoList.ConstantsMyToDo;
 import net.htlgkr.krejo.toDoList.HTTPSHelper;
+import net.htlgkr.krejo.toDoList.Message;
 import net.htlgkr.krejo.toDoList.R;
 import net.htlgkr.krejo.toDoList.login.user.User;
 import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListDataService;
 import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoList;
 import net.htlgkr.krejo.toDoList.management.ToDoList.ToDoListActivity;
+import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoListDTO;
 import net.htlgkr.krejo.toDoList.management.ToDoList.data.ToDoListResource;
 
 import java.io.File;
@@ -42,6 +45,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -64,6 +68,8 @@ public class ManagerActivity extends AppCompatActivity {
     private static final HTTPSHelper httpsHelper = new HTTPSHelper();
 
     private static List<ToDoListResource> allToDoListRessourcesFromServer = new ArrayList<>();
+
+    private ToDoListDataService toDoListDataService = new ToDoListDataService();
 
 
     @Override
@@ -141,7 +147,7 @@ public class ManagerActivity extends AppCompatActivity {
         if (networkAvailable) {
             getToDoListRessourcesFromServerAsync();
             filterRelevantLists();
-            managerList = ToDoListDataService
+            managerList = toDoListDataService
                     .convertToDoListResourceListToToDoListEntityList(allToDoListRessourcesFromServer);
         } else {
             try {
@@ -199,7 +205,7 @@ public class ManagerActivity extends AppCompatActivity {
                 .stream()
                 .filter(toDoList -> toDoList.getOwnerId() == userId)
                 .collect(Collectors.toList());
-        return ToDoListDataService.convertToDoListResourceListToToDoListEntityList(relevantResources);
+        return toDoListDataService.convertToDoListResourceListToToDoListEntityList(relevantResources);
     }
 
     private void setUpViews() {
@@ -310,6 +316,7 @@ public class ManagerActivity extends AppCompatActivity {
                 if (edit) {
                     toDoList.setToDoList(selectedToDoList.getToDoList());
                     managerList.set(managerList.indexOf(selectedToDoList), toDoList);
+                    editToDoListOnServerAsync(toDoList);
                 } else {
                     toDoList.setToDoList(new ArrayList<>());
                     managerList.add(toDoList);
@@ -329,50 +336,104 @@ public class ManagerActivity extends AppCompatActivity {
         createToDoListDialog.show();
     }
 
-    private void handleSaveToDoLists() throws IOException {
-        if (networkAvailable) {
-            addToDoListToServerAsync();
-        } else {
-            writeToDoListsToFile();
-        }
-    }
-
-    private void addToDoListToServerAsync() {
+    private void editToDoListOnServerAsync(ToDoList selectedToDoList) {
         @SuppressLint("StaticFieldLeak") AsyncTask<ToDoList, Void, ToDoListResource> asyncTask
                 = new AsyncTask<ToDoList, Void, ToDoListResource>() {
             @Override
             protected ToDoListResource doInBackground(ToDoList... toDoLists) {
                 System.out.println(toDoLists[0]);
+                ToDoList toDoList = toDoLists[0];
                 ToDoListResource toDoListResource;
+                ToDoListDTO toDoListDTO = toDoListDataService.convertToDoListEntityToToDoListDTO(toDoList);
                 try {
-                        toDoListResource = (ToDoListResource) httpsHelper.sendRequest(ConstantsMyToDo.TODOLISTS
-                                        + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
-                                        + "&"
-                                        + ConstantsMyToDo.PASSWORD + "=" + user.getPassword(),
-                                ConstantsMyToDo.POST,
-                                Optional.of(ToDoListDataService.convertToDoListEntityListToToDoListDTOList(//todo ---- toDoLists[0])),
-                                new ToDoListResource());
+                    toDoListResource = ((ToDoListResource) httpsHelper.sendRequest(
+                            ConstantsMyToDo.TODOLISTS
+                                    + ConstantsMyToDo.ID + "=" + toDoList.getId()
+                                    + "&"
+                                    + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
+                                    + "&"
+                                    + ConstantsMyToDo.PASSWORD + "=" + user.getPassword()
+                            ,
+                            ConstantsMyToDo.PUT,
+                            Optional.of(toDoListDTO),
+                            new ToDoListResource()));
 
-                } catch (IOException e) {
-                    Log.e(TAG, "doInBackground: ToDoLists couldn't be sent to server");
+                } catch (
+                        IOException e) {
+                    Log.e(TAG, "doInBackground: ToDoList couldn't be sent to server");
                     toDoListResource = null;
                 }
                 return toDoListResource;
             }
 
             @Override
-            protected void onPostExecute(ToDoListResource resource) {
+            protected void onPostExecute(ToDoListResource toDoListResource) {
 
-                if (resource == null) {
-                    Log.e(TAG, "onPostExecute: No TodoList was uploaded");
+                if (toDoListResource == null) {
+                    Log.e(TAG, "onPostExecute: No TodoList was edited");
                 } else {
-                    System.out.println("The following todolist was uploaded:");
-                    System.out.println(resource);
+                    System.out.println("The following todolist was updated:");
+                    System.out.println(toDoListResource);
                 }
             }
         };
-        asyncTask.execute();
+        asyncTask.execute(selectedToDoList);
+    }
 
+    private void handleSaveToDoLists() throws IOException {
+        if (networkAvailable) {
+            if (!managerList.isEmpty()) {
+                addToDoListToServerAsync(managerList.toArray(new ToDoList[0]));
+            } else {
+                Log.e(TAG, "No ToDoLists to save.");
+            }
+        } else {
+            writeToDoListsToFile();
+        }
+    }
+
+    private void addToDoListToServerAsync(ToDoList... toDoLists) {
+        @SuppressLint("StaticFieldLeak") AsyncTask<ToDoList, Void, List<ToDoListResource>> asyncTask
+                = new AsyncTask<ToDoList, Void, List<ToDoListResource>>() {
+            @Override
+            protected List<ToDoListResource> doInBackground(ToDoList... toDoLists) {
+                System.out.println(toDoLists[0]);
+                List<ToDoListResource> resourceList = new ArrayList<>();
+                try {
+                    for (ToDoListDTO toDoListDTO : toDoListDataService.
+                            convertToDoListEntityListToToDoListDTOList(
+                                    Arrays.asList(toDoLists))) {
+
+                        resourceList.add((ToDoListResource) httpsHelper.sendRequest(
+                                ConstantsMyToDo.TODOLISTS
+                                        + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
+                                        + "&"
+                                        + ConstantsMyToDo.PASSWORD + "=" + user.getPassword(),
+                                ConstantsMyToDo.POST,
+                                Optional.of(toDoListDTO),
+                                new ToDoListResource()));
+                    }
+
+                } catch (IOException e) {
+                    Log.e(TAG, "doInBackground: ToDoLists couldn't be sent to server");
+                    resourceList = null;
+                }
+                return resourceList;
+            }
+
+            @Override
+            protected void onPostExecute(List<ToDoListResource> resourceList) {
+
+                if (resourceList.isEmpty()) {
+                    Log.e(TAG, "onPostExecute: No TodoList was uploaded");
+                } else {
+                    System.out.println("The following todolists were uploaded:");
+                    // TODO: 05.06.2023 moch do so dass olle todoListen in deina app vo de resourcen aktualisiert werden damit ma a id hod. 
+                    resourceList.forEach(System.out::println);
+                }
+            }
+        };
+        asyncTask.execute(toDoLists);
     }
 
     private void writeToDoListsToFile() throws JsonProcessingException {
@@ -424,12 +485,53 @@ public class ManagerActivity extends AppCompatActivity {
             default:
                 return false;
         }
-        return false; ///data/data/net.htlgkr.krejo.toDoList/code_cache/.ll
+        return false;
     }
 
     private void handleDelete() {
         managerList.remove(selectedToDoList);
+        removeToDoListFromServerAsync(selectedToDoList);
         managerAdapter.notifyDataSetChanged();
+    }
+
+    private void removeToDoListFromServerAsync(ToDoList selectedToDoList) {
+        @SuppressLint("StaticFieldLeak") AsyncTask<ToDoList, Void, Message> asyncTask
+                = new AsyncTask<ToDoList, Void, Message>() {
+            @Override
+            protected Message doInBackground(ToDoList... toDoLists) {
+                System.out.println(toDoLists[0]);
+                int idOfToDoList = toDoLists[0].getId();
+                Message response = new Message();
+                try {
+                    response = (Message) httpsHelper.sendRequest(
+                            ConstantsMyToDo.TODOLISTS
+                                    + ConstantsMyToDo.ID + "=" + idOfToDoList
+                                    + "&"
+                                    + ConstantsMyToDo.USERNAME + "=" + user.getUsername()
+                                    + "&"
+                                    + ConstantsMyToDo.PASSWORD + "=" + user.getPassword()
+                            ,
+                            ConstantsMyToDo.PUT,
+                            Optional.empty(),
+                            Optional.of(new Message()));
+
+                } catch (
+                        IOException e) {
+                    Log.e(TAG, "doInBackground: ToDoList couldn't be sent to server");
+                }
+                return response;
+            }
+
+            @Override
+            protected void onPostExecute(Message message) {
+                if (message == null) {
+                    Log.e(TAG, "onPostExecute: todolist was deleted");
+                } else {
+                    Log.e(TAG, "onPostExecute: " + message.getMessage() );
+                }
+            }
+        };
+        asyncTask.execute(selectedToDoList);
     }
 
     private void handleEdit() {

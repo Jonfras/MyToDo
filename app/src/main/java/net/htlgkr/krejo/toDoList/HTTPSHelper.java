@@ -42,9 +42,9 @@ public class HTTPSHelper {
                 if (httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_CREATED
                     || httpsURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     response = getResponse(httpsURLConnection);
-                    Log.i(TAG, "sendRegisterPOSTRequest: response from server: " + response);
+                    Log.i(TAG, "sendRequest: response from server: " + response);
                 } else {
-                    Log.e(TAG, "POST Request failed: "
+                    Log.e(TAG, "Request failed: "
                             + httpsURLConnection.getResponseCode()
                             + " " +
                             httpsURLConnection.getResponseMessage());
@@ -74,8 +74,8 @@ public class HTTPSHelper {
     private static void writeOutput(String body, HttpsURLConnection httpsURLConnection)
             throws IOException {
         try (OutputStream os = httpsURLConnection.getOutputStream()) {
-            byte[] input = body.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
+            byte[] output = body.getBytes(StandardCharsets.UTF_8);
+            os.write(output, 0, output.length);
         }
     }
 

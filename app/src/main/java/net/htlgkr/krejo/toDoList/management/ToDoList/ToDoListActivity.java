@@ -5,9 +5,11 @@ import androidx.preference.PreferenceManager;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.app.Notification;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -79,6 +81,7 @@ public class ToDoListActivity extends AppCompatActivity {
         prefs.registerOnSharedPreferenceChangeListener(preferencesChangeListener);
 
         setUp();
+
     }
 
 
@@ -161,6 +164,7 @@ public class ToDoListActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_to_do_list, menu);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         return true;
     }
 

@@ -9,14 +9,14 @@ import java.util.List;
 
 public class ToDoListDataService {
 
-    public static ToDoList convertToDoListResourceToToDoListEntity(ToDoListResource resource) {
+    public ToDoList convertToDoListResourceToToDoListEntity(ToDoListResource resource) {
         return new ToDoList(
                 resource.getName(),
                 resource.getAdditionalData(),
                 null);
     }
 
-    public static List<ToDoList> convertToDoListResourceListToToDoListEntityList(List<ToDoListResource> resourceList) {
+    public List<ToDoList> convertToDoListResourceListToToDoListEntityList(List<ToDoListResource> resourceList) {
         List<ToDoList> toDoLists = new ArrayList<>();
         for (ToDoListResource resource : resourceList) {
             toDoLists.add(convertToDoListResourceToToDoListEntity(resource));
@@ -24,11 +24,11 @@ public class ToDoListDataService {
         return toDoLists;
     }
 
-    public static ToDoListDTO convertToDoListEntityToToDoListDTO(ToDoList toDoList){
+    public ToDoListDTO convertToDoListEntityToToDoListDTO(ToDoList toDoList){
         return new ToDoListDTO(toDoList.getName(), toDoList.getAdditionalData());
     }
 
-    public static List<ToDoListDTO> convertToDoListEntityListToToDoListDTOList(List<ToDoList> toDoLists) {
+    public List<ToDoListDTO> convertToDoListEntityListToToDoListDTOList(List<ToDoList> toDoLists) {
         List<ToDoListDTO> toDoListDTOS = new ArrayList<>();
         for (ToDoList toDoList :
                 toDoLists) {
